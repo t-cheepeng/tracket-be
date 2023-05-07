@@ -414,4 +414,17 @@ public class StockServiceTest {
     verify(tradeRepository).save(argumentCaptor.capture());
     assertThat(argumentCaptor.getValue()).isEqualTo(expectedTrade);
   }
+
+  @Test
+  void Get_all_stocks_no_deleted_returned() throws Exception {
+    Stock testStock1 = TestHelper.getTestStock();
+    Stock deletedStock = TestHelper.getTestStock();
+    deletedStock.setDeleted(true);
+    deletedStock.setName("BCD");
+    when(stockRepository.findAll()).thenReturn(List.of(testStock1, deletedStock));
+
+    List<Stock> stocks = stockService.getAllStocks();
+
+    assertThat(stocks).containsExactly(testStock1);
+  }
 }

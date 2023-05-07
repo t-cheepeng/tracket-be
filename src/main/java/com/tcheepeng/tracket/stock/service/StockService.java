@@ -57,6 +57,10 @@ public class StockService {
     return stockRepository.findById(stockName);
   }
 
+  public List<Stock> getAllStocks() {
+    return stockRepository.findAll().stream().filter(stock -> !stock.isDeleted()).toList();
+  }
+
   @Transactional
   public void createStock(CreateStockRequest request) {
     Stock stock = new Stock();
@@ -128,6 +132,10 @@ public class StockService {
             ? null
             : request.getBuyId());
     tradeRepository.save(trade);
+  }
+
+  public List<Trade> getAllTrades() {
+    return tradeRepository.findAll();
   }
 
   private void verifyBusinessConstraints(TradeStockRequest request)

@@ -179,6 +179,9 @@ public class ApplicationControllerAdvice extends ResponseEntityExceptionHandler 
     } else if (ex.getMessage().contains(BK_SELL_WRONG_STOCK.name())) {
       code = "buyId";
       errorMsg = "Sell trade does not match with the corresponding buy trade";
+    } else if (ex.getMessage().contains("uk_ticker_symbol_api")) {
+      code = "stockName";
+      errorMsg = "Stock already exists";
     } else {
       code = Constants.GENERIC_ERROR_CODE;
       errorMsg = "Failed to process entity";

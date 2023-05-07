@@ -16,6 +16,7 @@ import com.tcheepeng.tracket.stock.api.ExternalSearchResponse;
 import com.tcheepeng.tracket.stock.controller.request.CreateStockRequest;
 import com.tcheepeng.tracket.stock.controller.request.PatchStockRequest;
 import com.tcheepeng.tracket.stock.controller.request.TradeStockRequest;
+import com.tcheepeng.tracket.stock.model.AssetClass;
 import com.tcheepeng.tracket.stock.model.Stock;
 import com.tcheepeng.tracket.stock.service.StockService;
 import java.util.Arrays;
@@ -179,6 +180,44 @@ public class StockControllerTest {
     String jsonBody = result.getResponse().getContentAsString();
     String expectedJson =
         "{\"status\":\"SUCCESS\",\"errors\":null,\"data\":{\"name\":\"ABC\",\"currency\":\"SGD\",\"assetClass\":\"BOND\",\"displayTickerSymbol\":\"Display\"}}";
+    assertEquals(expectedJson, jsonBody, JSONCompareMode.STRICT);
+  }
+
+  @Test
+  void Get_all_stock_is_successful() throws Exception {
+    Stock testStock1 = TestHelper.getTestStock();
+    Stock testStock2 = TestHelper.getTestStock();
+    testStock2.setName("BCD");
+    testStock2.setAssetClass(AssetClass.CRYPTOCURRENCY);
+    when(service.getAllStocks()).thenReturn(List.of(testStock1, testStock2));
+
+    MvcResult result =
+            mockMvc
+                    .perform(get("/api/stock/").contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andReturn();
+
+    String jsonBody = result.getResponse().getContentAsString();
+    String expectedJson =
+        "{\"status\":\"SUCCESS\",\"errors\":null,\"data\":{\"stocks\":[{\"name\":\"ABC\",\"currency\":\"SGD\",\"assetClass\":\"BOND\",\"displayTickerSymbol\":\"Display\"},{\"name\":\"BCD\",\"currency\":\"SGD\",\"assetClass\":\"CRYPTOCURRENCY\",\"displayTickerSymbol\":\"Display\"}]}}";
+    assertEquals(expectedJson, jsonBody, JSONCompareMode.STRICT);
+  }
+
+  @Test
+  void Get_all_stock_no_stock() throws Exception {
+    when(service.getAllStocks()).thenReturn(List.of());
+
+    MvcResult result =
+            mockMvc
+                    .perform(get("/api/stock/").contentType(MediaType.APPLICATION_JSON))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andReturn();
+
+    String jsonBody = result.getResponse().getContentAsString();
+    String expectedJson =
+            "{\"status\":\"SUCCESS\",\"errors\":null,\"data\":{\"stocks\":[]}}";
     assertEquals(expectedJson, jsonBody, JSONCompareMode.STRICT);
   }
 

@@ -8,9 +8,9 @@ import com.tcheepeng.tracket.stock.api.ExternalSearchResponse;
 import com.tcheepeng.tracket.stock.controller.request.CreateStockRequest;
 import com.tcheepeng.tracket.stock.controller.request.PatchStockRequest;
 import com.tcheepeng.tracket.stock.controller.request.TradeStockRequest;
-import com.tcheepeng.tracket.stock.controller.response.SearchResponseData;
-import com.tcheepeng.tracket.stock.controller.response.StockResponse;
+import com.tcheepeng.tracket.stock.controller.response.*;
 import com.tcheepeng.tracket.stock.model.Stock;
+import com.tcheepeng.tracket.stock.model.Trade;
 import com.tcheepeng.tracket.stock.service.StockService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -164,6 +164,59 @@ public class StockController {
         HttpStatus.OK);
   }
 
+  @Operation(summary = "Get all stocks")
+  @ApiResponses(
+      value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description =
+                "Returns all stocks in database or an empty list of nothing is in database.",
+            content = {
+              @Content(
+                  schema = @Schema(implementation = StocksResponse.class),
+                  examples = {
+                    @ExampleObject(
+                        value =
+                            """
+                              {
+                                "status": "SUCCESS",
+                                "data": {
+                                    "stocks": [
+                                        {
+                                        "name": "Straits Times Index Fund ETF",
+                                        "currency": "SGD",
+                                        "assetClass": "ETF",
+                                        "displayTickerSymbol": "STI"
+                                        }
+                                    ]
+                                  }
+                              }
+                             """)
+                  })
+            }),
+      })
+  @GetMapping(path = "/", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<ApiResponse> getAllStocks() {
+    List<Stock> stocks = stockService.getAllStocks();
+    List<StockResponse> stockResponses =
+        stocks.stream()
+            .map(
+                stock ->
+                    StockResponse.builder()
+                        .name(stock.getName())
+                        .assetClass(stock.getAssetClass())
+                        .currency(stock.getCurrency())
+                        .displayTickerSymbol(stock.getDisplayTickerSymbol())
+                        .build())
+            .toList();
+    return new ResponseEntity<>(
+        ApiResponse.builder()
+            .status(ApiResponse.Status.SUCCESS)
+            .data(StocksResponse.builder().stocks(stockResponses).build())
+            .build(),
+        HttpStatus.OK);
+  }
+
   @Operation(summary = "Create a stock and ticker to api mappings")
   @ApiResponses(
       value = {
@@ -274,5 +327,59 @@ public class StockController {
   public ResponseEntity<ApiResponse> tradeStock(@Valid @RequestBody TradeStockRequest request) {
     stockService.tradeStock(request);
     return new ResponseEntity<>(Constants.EMPTY_SUCCESS_REPLY, HttpStatus.OK);
+  }
+
+  @Operation(summary = "Get all trades")
+  @ApiResponses(
+      value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description =
+                "Returns all trades in database or an empty list of nothing is in database.",
+            content = {
+              @Content(
+                  schema = @Schema(implementation = TradesResponse.class),
+                  examples = {
+                    @ExampleObject(
+                        value =
+                            """
+                              {
+                                "status": "SUCCESS",
+                                "data": {
+                                    "trades": [
+                                        {
+
+                                        }
+                                    ]
+                                  }
+                              }
+                             """)
+                  })
+            }),
+      })
+  @GetMapping(value = "/trade/", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<ApiResponse> getAllTrades() {
+    List<Trade> trades = stockService.getAllTrades();
+    List<TradeResponse> tradeResponses =
+        trades.stream()
+            .map(
+                trade ->
+                    TradeResponse.builder()
+                        .tradeTs(trade.getTradeTs())
+                        .tradeType(trade.getTradeType())
+                        .numOfUnits(trade.getNumOfUnits())
+                        .pricePerUnit(trade.getPricePerUnit())
+                        .name(trade.getName())
+                        .account(trade.getAccount())
+                        .fee(trade.getFee())
+                        .buyId(trade.getBuyId())
+                        .build())
+            .toList();
+    return new ResponseEntity<>(
+        ApiResponse.builder()
+            .status(ApiResponse.Status.SUCCESS)
+            .data(TradesResponse.builder().trades(tradeResponses).build())
+            .build(),
+        HttpStatus.OK);
   }
 }
