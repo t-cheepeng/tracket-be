@@ -32,7 +32,7 @@ import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = {TestWebSecurityConfiguration.class})
 @WebMvcTest(controllers = AccountGroupController.class)
-public class AccountGroupControllerTest {
+public class AccountGroupsResponseControllerTest {
 
   @Autowired private MockMvc mockMvc;
 

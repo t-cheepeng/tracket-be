@@ -6,7 +6,10 @@ import com.tcheepeng.tracket.group.model.AccountAccountGroup;
 import com.tcheepeng.tracket.group.model.AccountGroup;
 import com.tcheepeng.tracket.group.repository.AccountAccountGroupRepository;
 import com.tcheepeng.tracket.group.repository.AccountGroupRepository;
+import com.tcheepeng.tracket.group.service.dto.GroupMapping;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class AccountGroupService {
@@ -36,5 +39,20 @@ public class AccountGroupService {
     AccountAccountGroup groupEntity = new AccountAccountGroup();
     groupEntity.setAccountAccountGroup(group);
     accountAccountGroupRepository.save(groupEntity);
+  }
+
+  public List<AccountGroup> getAllGroups() {
+    return accountGroupRepository.findAll();
+  }
+
+  public List<AccountAccountGroup> getAllAccountGroupMappings() {
+    return accountAccountGroupRepository.findAll();
+  }
+
+  public List<GroupMapping> getGroupMappings() {
+    List<AccountGroup> groups = getAllGroups();
+    List<AccountAccountGroup> accountGroups = getAllAccountGroupMappings();
+
+
   }
 }
