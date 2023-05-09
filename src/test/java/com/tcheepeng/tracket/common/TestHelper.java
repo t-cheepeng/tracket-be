@@ -6,15 +6,19 @@ import com.tcheepeng.tracket.account.controller.request.CreateAccountRequest;
 import com.tcheepeng.tracket.account.controller.request.PatchAccountRequest;
 import com.tcheepeng.tracket.account.model.Account;
 import com.tcheepeng.tracket.account.model.AccountType;
+import com.tcheepeng.tracket.group.model.AccountAccountGroup;
+import com.tcheepeng.tracket.group.model.AccountGroup;
 import com.tcheepeng.tracket.stock.api.ApiStrategy;
 import com.tcheepeng.tracket.stock.controller.request.CreateStockRequest;
 import com.tcheepeng.tracket.stock.controller.request.PatchStockRequest;
-import com.tcheepeng.tracket.stock.controller.request.TradeStockRequest;import com.tcheepeng.tracket.stock.model.AssetClass;
+import com.tcheepeng.tracket.stock.controller.request.TradeStockRequest;
+import com.tcheepeng.tracket.stock.model.AssetClass;
 import com.tcheepeng.tracket.stock.model.Stock;
+import com.tcheepeng.tracket.stock.model.TradeType;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Map;
-import com.tcheepeng.tracket.stock.model.TradeType;import org.json.JSONException;
+import org.json.JSONException;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 
 public class TestHelper {
@@ -81,20 +85,38 @@ public class TestHelper {
 
   public static TradeStockRequest getTradeStockRequest() {
     return TradeStockRequest.builder()
-            .timestamp(1L)
-            .tradeType(TradeType.BUY)
-            .numOfUnits(1)
-            .pricePerUnitInMilli(1000)
-            .name("ABC")
-            .accountId(0)
-            .feeInMilli(1000)
-            .buyId(null)
-            .build();
+        .timestamp(1L)
+        .tradeType(TradeType.BUY)
+        .numOfUnits(1)
+        .pricePerUnitInMilli(1000)
+        .name("ABC")
+        .accountId(0)
+        .feeInMilli(1000)
+        .buyId(null)
+        .build();
   }
 
   public static void assertInternalServerError(String jsonReply) throws JSONException {
     String expectedJson =
         "{\"status\":\"FAIL\",\"errors\":[{\"code\":\"generic\",\"message\":\"Internal server error\"}],\"data\":null}";
     assertEquals(jsonReply, expectedJson, JSONCompareMode.STRICT);
+  }
+
+  public static AccountGroup getTestAccountGroup() {
+    AccountGroup accountGroup = new AccountGroup();
+    accountGroup.setId(1);
+    accountGroup.setName("ABC");
+    accountGroup.setCurrency("SGD");
+    return accountGroup;
+  }
+
+  public static AccountAccountGroup getTestAccountAccountGroup() {
+    AccountAccountGroup accountGroup = new AccountAccountGroup();
+    AccountAccountGroup.EmbeddedAccountAccountGroup embeddedAccountAccountGroup =
+        new AccountAccountGroup.EmbeddedAccountAccountGroup();
+    embeddedAccountAccountGroup.setAccountId(1);
+    embeddedAccountAccountGroup.setAccountGroupId(1);
+    accountGroup.setAccountAccountGroup(embeddedAccountAccountGroup);
+    return accountGroup;
   }
 }

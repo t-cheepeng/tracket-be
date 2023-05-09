@@ -2,7 +2,9 @@ package com.tcheepeng.tracket.group.controller;
 
 import static com.tcheepeng.tracket.common.TestHelper.assertInternalServerError;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -10,7 +12,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.tcheepeng.tracket.group.controller.request.CreateAccountAccountGroupRequest;
 import com.tcheepeng.tracket.group.controller.request.CreateAccountGroupRequest;
 import com.tcheepeng.tracket.group.service.AccountGroupService;
+import com.tcheepeng.tracket.group.service.dto.GroupMapping;
 import com.tcheepeng.tracket.integration.common.TestWebSecurityConfiguration;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,7 +36,7 @@ import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = {TestWebSecurityConfiguration.class})
 @WebMvcTest(controllers = AccountGroupController.class)
-public class AccountGroupsResponseControllerTest {
+public class AccountGroupControllerTest {
 
   @Autowired private MockMvc mockMvc;
 
@@ -272,49 +276,75 @@ public class AccountGroupsResponseControllerTest {
   @Test
   void Group_account_data_integrity_violation_account_id() throws Exception {
     CreateAccountAccountGroupRequest request =
-            CreateAccountAccountGroupRequest.builder().accountId(0).accountGroupId(0).build();
+        CreateAccountAccountGroupRequest.builder().accountId(0).accountGroupId(0).build();
     ObjectMapper objectMapper = new ObjectMapper();
 
-    DataIntegrityViolationException exception = new DataIntegrityViolationException("fk_account_id");
+    DataIntegrityViolationException exception =
+        new DataIntegrityViolationException("fk_account_id");
     doThrow(exception).when(service).groupAccount(request);
 
     MvcResult result =
-            mockMvc
-                    .perform(
-                            post("/api/group/group")
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .content(objectMapper.writeValueAsString(request)))
-                    .andDo(print())
-                    .andExpect(status().isUnprocessableEntity())
-                    .andReturn();
+        mockMvc
+            .perform(
+                post("/api/group/group")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+            .andDo(print())
+            .andExpect(status().isUnprocessableEntity())
+            .andReturn();
     String jsonBody = result.getResponse().getContentAsString();
     String expectedJson =
-            "{\"status\":\"FAIL\",\"errors\":[{\"code\":\"accountId\",\"message\":\"Account does not exist\"}],\"data\":null}";
+        "{\"status\":\"FAIL\",\"errors\":[{\"code\":\"accountId\",\"message\":\"Account does not exist\"}],\"data\":null}";
     assertEquals(jsonBody, expectedJson, JSONCompareMode.STRICT);
   }
-
 
   @Test
   void Group_account_data_integrity_violation_account_group_id() throws Exception {
     CreateAccountAccountGroupRequest request =
-            CreateAccountAccountGroupRequest.builder().accountId(0).accountGroupId(0).build();
+        CreateAccountAccountGroupRequest.builder().accountId(0).accountGroupId(0).build();
     ObjectMapper objectMapper = new ObjectMapper();
 
-    DataIntegrityViolationException exception = new DataIntegrityViolationException("fk_account_group_id");
+    DataIntegrityViolationException exception =
+        new DataIntegrityViolationException("fk_account_group_id");
     doThrow(exception).when(service).groupAccount(request);
 
     MvcResult result =
-            mockMvc
-                    .perform(
-                            post("/api/group/group")
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .content(objectMapper.writeValueAsString(request)))
-                    .andDo(print())
-                    .andExpect(status().isUnprocessableEntity())
-                    .andReturn();
+        mockMvc
+            .perform(
+                post("/api/group/group")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+            .andDo(print())
+            .andExpect(status().isUnprocessableEntity())
+            .andReturn();
     String jsonBody = result.getResponse().getContentAsString();
     String expectedJson =
-            "{\"status\":\"FAIL\",\"errors\":[{\"code\":\"accountGroupId\",\"message\":\"Account group does not exist\"}],\"data\":null}";
+        "{\"status\":\"FAIL\",\"errors\":[{\"code\":\"accountGroupId\",\"message\":\"Account group does not exist\"}],\"data\":null}";
     assertEquals(jsonBody, expectedJson, JSONCompareMode.STRICT);
+  }
+
+  @Test
+  void Get_group_mapping() throws Exception {
+    when(service.getGroupMappings())
+        .thenReturn(
+            List.of(
+                GroupMapping.builder()
+                    .id(1)
+                    .name("ABC")
+                    .currency("SGD")
+                    .accountIdUnderGroup(List.of(1, 2, 3))
+                    .build()));
+
+    MvcResult result =
+        mockMvc
+            .perform(get("/api/group/map/all").contentType(MediaType.APPLICATION_JSON))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andReturn();
+
+    String jsonBody = result.getResponse().getContentAsString();
+    String expectedJson =
+        "{\"status\":\"SUCCESS\",\"errors\":null,\"data\":{\"groupMappings\":[{\"name\":\"ABC\",\"currency\":\"SGD\",\"accountIdUnderGroup\":[1,2,3]}]}}";
+    assertEquals(expectedJson, jsonBody, JSONCompareMode.STRICT);
   }
 }

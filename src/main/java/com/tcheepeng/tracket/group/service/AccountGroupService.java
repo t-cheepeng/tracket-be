@@ -7,9 +7,8 @@ import com.tcheepeng.tracket.group.model.AccountGroup;
 import com.tcheepeng.tracket.group.repository.AccountAccountGroupRepository;
 import com.tcheepeng.tracket.group.repository.AccountGroupRepository;
 import com.tcheepeng.tracket.group.service.dto.GroupMapping;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
+import org.springframework.stereotype.Service;
 
 @Service
 public class AccountGroupService {
@@ -53,6 +52,24 @@ public class AccountGroupService {
     List<AccountGroup> groups = getAllGroups();
     List<AccountAccountGroup> accountGroups = getAllAccountGroupMappings();
 
-
+    return groups.stream()
+        .map(
+            group ->
+                GroupMapping.builder()
+                    .id(group.getId())
+                    .name(group.getName())
+                    .currency(group.getCurrency())
+                    .accountIdUnderGroup(
+                        accountGroups.stream()
+                            .filter(
+                                accountGroup ->
+                                    accountGroup.getAccountAccountGroup().getAccountGroupId()
+                                        == group.getId())
+                            .map(
+                                accountGroup ->
+                                    accountGroup.getAccountAccountGroup().getAccountId())
+                            .toList())
+                    .build())
+        .toList();
   }
 }
