@@ -1,24 +1,35 @@
 package com.tcheepeng.tracket.account.service;
 
+import static com.tcheepeng.tracket.common.validation.BusinessValidations.BK_ACCOUNT_MUST_EXIST;
+
+import com.tcheepeng.tracket.account.controller.request.AccountTransactionRequest;
 import com.tcheepeng.tracket.account.controller.request.CreateAccountRequest;
 import com.tcheepeng.tracket.account.controller.request.PatchAccountRequest;
 import com.tcheepeng.tracket.account.model.Account;
+import com.tcheepeng.tracket.account.model.AccountTransactionType;
+import com.tcheepeng.tracket.account.model.AccountTransactions;
 import com.tcheepeng.tracket.account.repository.AccountRepository;
+import com.tcheepeng.tracket.account.repository.AccountTransactionsRepository;
 import com.tcheepeng.tracket.common.service.TimeOperator;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AccountService {
 
   private final AccountRepository accountRepository;
+  private final AccountTransactionsRepository transactionsRepository;
   private final TimeOperator timeOperator;
 
   public AccountService(
-      final AccountRepository accountRepository, final TimeOperator timeOperator) {
+      final AccountRepository accountRepository,
+      final AccountTransactionsRepository transactionsRepository,
+      final TimeOperator timeOperator) {
     this.accountRepository = accountRepository;
+    this.transactionsRepository = transactionsRepository;
     this.timeOperator = timeOperator;
   }
 
@@ -53,5 +64,69 @@ public class AccountService {
 
   public List<Account> getAllAccounts() {
     return accountRepository.findAll();
+  }
+
+  @Transactional
+  public void transactAccount(AccountTransactionRequest request)
+      throws DataIntegrityViolationException {
+    verifyAccountsExist(request);
+    if (request.getTransactionType() == AccountTransactionType.DEPOSIT) {
+      handleDepositAccount(request);
+    } else if (request.getTransactionType() == AccountTransactionType.WITHDRAW) {
+      handleWithdrawAccount(request);
+    } else {
+      handleTransferAccount(request);
+    }
+  }
+
+  private void handleDepositAccount(AccountTransactionRequest request) {
+    getTransactionFromRequest(request);
+    accountRepository.updateAmountById(request.getAccountIdFrom(), request.getAmountsInCents());
+  }
+
+  private void handleWithdrawAccount(AccountTransactionRequest request) {
+    getTransactionFromRequest(request);
+    accountRepository.updateAmountById(request.getAccountIdFrom(), -request.getAmountsInCents());
+  }
+
+  private void handleTransferAccount(AccountTransactionRequest request) {
+    // TODO: Support transfers
+    return;
+  }
+
+  private void getTransactionFromRequest(AccountTransactionRequest request) {
+    AccountTransactions transaction = new AccountTransactions();
+    transaction.setAccountIdFrom(request.getAccountIdFrom());
+    transaction.setAccountIdTo(request.getAccountIdTo());
+    transaction.setTransactionTs(timeOperator.getCurrentTimestamp());
+    transaction.setTransactionType(request.getTransactionType());
+    transaction.setAmountInCents(request.getAmountsInCents());
+
+    transactionsRepository.save(transaction);
+  }
+
+  private void verifyAccountsExist(AccountTransactionRequest request)
+      throws DataIntegrityViolationException {
+    Optional<Account> fromAccount = accountRepository.findById(request.getAccountIdFrom());
+    if (fromAccount.isEmpty()) {
+      throw new DataIntegrityViolationException(
+          "Violation of "
+              + BK_ACCOUNT_MUST_EXIST
+              + " in account transactions: "
+              + request.getAccountIdFrom());
+    }
+
+    if (request.getAccountIdTo() == null) {
+      return;
+    }
+
+    Optional<Account> toAccount = accountRepository.findById(request.getAccountIdTo());
+    if (toAccount.isEmpty()) {
+      throw new DataIntegrityViolationException(
+          "Violation of "
+              + BK_ACCOUNT_MUST_EXIST
+              + " in account transactions: "
+              + request.getAccountIdTo());
+    }
   }
 }

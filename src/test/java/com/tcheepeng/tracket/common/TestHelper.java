@@ -2,9 +2,11 @@ package com.tcheepeng.tracket.common;
 
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 
+import com.tcheepeng.tracket.account.controller.request.AccountTransactionRequest;
 import com.tcheepeng.tracket.account.controller.request.CreateAccountRequest;
 import com.tcheepeng.tracket.account.controller.request.PatchAccountRequest;
 import com.tcheepeng.tracket.account.model.Account;
+import com.tcheepeng.tracket.account.model.AccountTransactionType;
 import com.tcheepeng.tracket.account.model.AccountType;
 import com.tcheepeng.tracket.group.model.AccountAccountGroup;
 import com.tcheepeng.tracket.group.model.AccountGroup;
@@ -118,5 +120,21 @@ public class TestHelper {
     embeddedAccountAccountGroup.setAccountGroupId(1);
     accountGroup.setAccountAccountGroup(embeddedAccountAccountGroup);
     return accountGroup;
+  }
+
+  public static AccountTransactionRequest getDepositRequest() {
+    return AccountTransactionRequest.builder()
+        .accountIdFrom(0)
+        .amountsInCents(1000)
+        .transactionType(AccountTransactionType.DEPOSIT)
+        .build();
+  }
+
+  public static AccountTransactionRequest getWithdrawRequest() {
+    return AccountTransactionRequest.builder()
+            .accountIdFrom(0)
+            .amountsInCents(1000)
+            .transactionType(AccountTransactionType.WITHDRAW)
+            .build();
   }
 }

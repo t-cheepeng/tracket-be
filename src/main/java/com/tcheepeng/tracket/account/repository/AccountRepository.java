@@ -18,4 +18,8 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
   @Modifying
   @Query("UPDATE Account a SET a.isDeleted=true WHERE a.id=:id")
   void softDeleteById(@Param(value = "id") int id);
+
+  @Modifying
+  @Query("Update Account a SET a.cashInCents=a.cashInCents + :amount WHERE a.id=:id")
+  void updateAmountById(@Param(value = "id") int id, @Param(value = "amount") int amount);
 }

@@ -1,12 +1,14 @@
 package com.tcheepeng.tracket.account.controller;
 
 import static com.tcheepeng.tracket.common.TestHelper.assertInternalServerError;
+import static com.tcheepeng.tracket.common.validation.BusinessValidations.BK_ACCOUNT_MUST_EXIST;
 import static org.mockito.Mockito.*;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.tcheepeng.tracket.account.controller.request.AccountTransactionRequest;
 import com.tcheepeng.tracket.account.controller.request.CreateAccountRequest;
 import com.tcheepeng.tracket.account.controller.request.PatchAccountRequest;
 import com.tcheepeng.tracket.account.model.Account;
@@ -211,11 +213,11 @@ class AccountControllerTest {
     when(service.getAllAccounts()).thenThrow(new RuntimeException());
 
     MvcResult result =
-            mockMvc
-                    .perform(get("/api/account/").contentType(MediaType.APPLICATION_JSON))
-                    .andDo(print())
-                    .andExpect(status().isInternalServerError())
-                    .andReturn();
+        mockMvc
+            .perform(get("/api/account/").contentType(MediaType.APPLICATION_JSON))
+            .andDo(print())
+            .andExpect(status().isInternalServerError())
+            .andReturn();
     assertInternalServerError(result.getResponse().getContentAsString());
   }
 
@@ -228,11 +230,11 @@ class AccountControllerTest {
     when(service.getAllAccounts()).thenReturn(List.of(notDeletedAccount, deletedAccount));
 
     MvcResult result =
-            mockMvc
-                    .perform(get("/api/account/").contentType(MediaType.APPLICATION_JSON))
-                    .andDo(print())
-                    .andExpect(status().isOk())
-                    .andReturn();
+        mockMvc
+            .perform(get("/api/account/").contentType(MediaType.APPLICATION_JSON))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andReturn();
     String jsonBody = result.getResponse().getContentAsString();
     String expectedJson =
         "{\"status\":\"SUCCESS\",\"errors\":null,\"data\":{\"accounts\":[{\"id\":1,\"accountType\":\"INVESTMENT\",\"currency\":\"SGD\",\"description\":\"Account description\",\"name\":\"Test Account\",\"cashInCents\":1000}]}}";
@@ -440,5 +442,91 @@ class AccountControllerTest {
             .andReturn();
 
     assertInternalServerError(result.getResponse().getContentAsString());
+  }
+
+  @Test
+  void Deposit_to_account() throws Exception {
+    AccountTransactionRequest request = TestHelper.getDepositRequest();
+    ObjectMapper mapper = new ObjectMapper();
+
+    MvcResult result =
+        mockMvc
+            .perform(
+                post("/api/account/transact")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(mapper.writeValueAsString(request)))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andReturn();
+
+    String expectedJsonReply = "{\"status\":\"SUCCESS\",\"errors\":null,\"data\":null}";
+    assertEquals(
+        result.getResponse().getContentAsString(), expectedJsonReply, JSONCompareMode.STRICT);
+  }
+
+  @Test
+  void Transact_unknown_transaction_type_to_account_fails() throws Exception {
+    MvcResult result =
+        mockMvc
+            .perform(
+                post("/api/account/transact")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        "{\"accountIdFrom\":0,\"amountsInCents\":1000,\"transactionType\":\"UNKNOWN\"}"))
+            .andDo(print())
+            .andExpect(status().isBadRequest())
+            .andReturn();
+
+    String expectedJsonReply =
+        "{\"status\":\"FAIL\",\"errors\":[{\"code\":\"transactionType\",\"message\":\"Account transactions must be one of [WITHDRAW, TRANSFER, DEPOSIT]\"}],\"data\":null}";
+    assertEquals(
+        result.getResponse().getContentAsString(), expectedJsonReply, JSONCompareMode.STRICT);
+  }
+
+  @Test
+  void Transact_negative_amount_fails() throws Exception {
+    AccountTransactionRequest request = TestHelper.getDepositRequest();
+    request.setAmountsInCents(-1000);
+    ObjectMapper mapper = new ObjectMapper();
+
+    MvcResult result =
+        mockMvc
+            .perform(
+                post("/api/account/transact")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(mapper.writeValueAsString(request)))
+            .andDo(print())
+            .andExpect(status().isBadRequest())
+            .andReturn();
+
+    String expectedJsonReply =
+        "{\"status\":\"FAIL\",\"errors\":[{\"code\":\"amountInCents\",\"message\":\"Transaction amount must be greater than 0\"}],\"data\":null}";
+    assertEquals(
+        result.getResponse().getContentAsString(), expectedJsonReply, JSONCompareMode.STRICT);
+  }
+
+  @Test
+  void Transact_non_existent_account_fails() throws Exception {
+    AccountTransactionRequest request = TestHelper.getDepositRequest();
+    request.setAmountsInCents(1000);
+    ObjectMapper mapper = new ObjectMapper();
+    doThrow(new DataIntegrityViolationException(BK_ACCOUNT_MUST_EXIST.name()))
+        .when(service)
+        .transactAccount(request);
+
+    MvcResult result =
+        mockMvc
+            .perform(
+                post("/api/account/transact")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(mapper.writeValueAsString(request)))
+            .andDo(print())
+            .andExpect(status().isUnprocessableEntity())
+            .andReturn();
+
+    String expectedJsonReply =
+        "{\"status\":\"FAIL\",\"errors\":[{\"code\":\"accountId\",\"message\":\"Account does not exist\"}],\"data\":null}";
+    assertEquals(
+        result.getResponse().getContentAsString(), expectedJsonReply, JSONCompareMode.STRICT);
   }
 }

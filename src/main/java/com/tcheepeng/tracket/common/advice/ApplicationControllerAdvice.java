@@ -3,6 +3,7 @@ package com.tcheepeng.tracket.common.advice;
 import static com.tcheepeng.tracket.common.Constants.GENERIC_ERROR_CODE;
 import static com.tcheepeng.tracket.common.validation.BusinessValidations.*;
 
+import com.tcheepeng.tracket.account.model.AccountTransactionType;
 import com.tcheepeng.tracket.account.model.AccountType;
 import com.tcheepeng.tracket.common.Constants;
 import com.tcheepeng.tracket.common.response.ApiError;
@@ -107,6 +108,10 @@ public class ApplicationControllerAdvice extends ResponseEntityExceptionHandler 
     if (message.contains("Enum class") && message.contains(AccountType.class.getName())) {
       code = "accountType";
       errorMsg = "Account type must be one of [INVESTMENT, BUDGET]";
+    } else if (message.contains("Enum class")
+        && message.contains(AccountTransactionType.class.getName())) {
+      code = "transactionType";
+      errorMsg = "Account transactions must be one of [WITHDRAW, TRANSFER, DEPOSIT]";
     } else {
       code = GENERIC_ERROR_CODE;
       errorMsg = "Failed to read request";
@@ -182,6 +187,9 @@ public class ApplicationControllerAdvice extends ResponseEntityExceptionHandler 
     } else if (ex.getMessage().contains("uk_ticker_symbol_api")) {
       code = "stockName";
       errorMsg = "Stock already exists";
+    } else if (ex.getMessage().contains(BK_ACCOUNT_MUST_EXIST.name())) {
+      code = "accountId";
+      errorMsg = "Account does not exist";
     } else {
       code = Constants.GENERIC_ERROR_CODE;
       errorMsg = "Failed to process entity";

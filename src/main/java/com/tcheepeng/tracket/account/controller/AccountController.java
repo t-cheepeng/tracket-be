@@ -1,5 +1,6 @@
 package com.tcheepeng.tracket.account.controller;
 
+import com.tcheepeng.tracket.account.controller.request.AccountTransactionRequest;
 import com.tcheepeng.tracket.account.controller.request.CreateAccountRequest;
 import com.tcheepeng.tracket.account.controller.request.PatchAccountRequest;
 import com.tcheepeng.tracket.account.controller.response.AccountResponse;
@@ -249,6 +250,29 @@ public class AccountController {
       @Parameter(description = "ID of the account to delete", example = "1") @PathVariable
           Integer accountId) {
     accountService.deleteAccount(accountId);
+    return new ResponseEntity<>(Constants.EMPTY_SUCCESS_REPLY, HttpStatus.OK);
+  }
+
+  @PostMapping(
+      value = "/transact",
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<ApiResponse> transactAccount(
+      @Valid @RequestBody AccountTransactionRequest request) {
+    if (request.getAmountsInCents() < 0) {
+      return new ResponseEntity<>(
+          ApiResponse.builder()
+              .status(ApiResponse.Status.FAIL)
+              .errors(
+                  List.of(
+                      ApiError.builder()
+                          .code("amountInCents")
+                          .message("Transaction amount must be greater than 0")
+                          .build()))
+              .build(),
+          HttpStatus.BAD_REQUEST);
+    }
+    accountService.transactAccount(request);
     return new ResponseEntity<>(Constants.EMPTY_SUCCESS_REPLY, HttpStatus.OK);
   }
 }

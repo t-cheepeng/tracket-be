@@ -1,12 +1,14 @@
 package com.tcheepeng.tracket.account.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.from;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
+import com.tcheepeng.tracket.account.controller.request.AccountTransactionRequest;
 import com.tcheepeng.tracket.account.model.Account;
+import com.tcheepeng.tracket.account.model.AccountTransactionType;
+import com.tcheepeng.tracket.account.model.AccountTransactions;
 import com.tcheepeng.tracket.account.repository.AccountRepository;
+import com.tcheepeng.tracket.account.repository.AccountTransactionsRepository;
 import com.tcheepeng.tracket.common.TestHelper;
 import com.tcheepeng.tracket.common.service.TimeOperator;
 import java.sql.Timestamp;
@@ -18,6 +20,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @ExtendWith(MockitoExtension.class)
 public class AccountServiceTest {
@@ -25,6 +28,8 @@ public class AccountServiceTest {
   @InjectMocks AccountService accountService;
 
   @Mock AccountRepository accountRepository;
+
+  @Mock AccountTransactionsRepository transactionsRepository;
 
   @Mock TimeOperator timeOperator;
 
@@ -83,7 +88,62 @@ public class AccountServiceTest {
 
     accountService.deleteAccount(1);
 
-    assertThat(intCaptor.getValue())
-            .isEqualTo(1);
+    assertThat(intCaptor.getValue()).isEqualTo(1);
+  }
+
+  @Test
+  void Deposit_transaction_is_successful() {
+    AccountTransactionRequest request = TestHelper.getDepositRequest();
+    when(timeOperator.getCurrentTimestamp()).thenReturn(Timestamp.from(Instant.ofEpochMilli(1000)));
+    when(accountRepository.findById((anyInt())))
+        .thenReturn(Optional.of(TestHelper.getTestAccount()));
+
+    accountService.transactAccount(request);
+
+    ArgumentCaptor<AccountTransactions> transactionCaptor =
+        ArgumentCaptor.forClass(AccountTransactions.class);
+    verify(transactionsRepository).save(transactionCaptor.capture());
+    AccountTransactions expectedTransaction = new AccountTransactions();
+    expectedTransaction.setTransactionTs(Timestamp.from(Instant.ofEpochMilli(1000)));
+    expectedTransaction.setAccountIdTo(null);
+    expectedTransaction.setAccountIdFrom(0);
+    expectedTransaction.setAmountInCents(1000);
+    expectedTransaction.setTransactionType(AccountTransactionType.DEPOSIT);
+
+    assertThat(transactionCaptor.getValue()).isEqualTo(expectedTransaction);
+    verify(accountRepository).updateAmountById(0, 1000);
+  }
+
+  @Test
+  void Withdraw_transaction_is_successful() {
+    AccountTransactionRequest request = TestHelper.getWithdrawRequest();
+    when(timeOperator.getCurrentTimestamp()).thenReturn(Timestamp.from(Instant.ofEpochMilli(1000)));
+    when(accountRepository.findById((anyInt())))
+        .thenReturn(Optional.of(TestHelper.getTestAccount()));
+
+    accountService.transactAccount(request);
+
+    ArgumentCaptor<AccountTransactions> transactionCaptor =
+        ArgumentCaptor.forClass(AccountTransactions.class);
+    verify(transactionsRepository).save(transactionCaptor.capture());
+    AccountTransactions expectedTransaction = new AccountTransactions();
+    expectedTransaction.setTransactionTs(Timestamp.from(Instant.ofEpochMilli(1000)));
+    expectedTransaction.setAccountIdTo(null);
+    expectedTransaction.setAccountIdFrom(0);
+    expectedTransaction.setAmountInCents(1000);
+    expectedTransaction.setTransactionType(AccountTransactionType.WITHDRAW);
+
+    assertThat(transactionCaptor.getValue()).isEqualTo(expectedTransaction);
+    verify(accountRepository).updateAmountById(0, -1000);
+  }
+
+  @Test
+  void Transaction_to_account_that_does_not_exist_fails() {
+    AccountTransactionRequest request = TestHelper.getDepositRequest();
+    when(accountRepository.findById(anyInt())).thenReturn(Optional.empty());
+
+    assertThatExceptionOfType(DataIntegrityViolationException.class)
+        .isThrownBy(() -> accountService.transactAccount(request))
+        .withMessage("Violation of BK_ACCOUNT_MUST_EXIST in account transactions: 0");
   }
 }

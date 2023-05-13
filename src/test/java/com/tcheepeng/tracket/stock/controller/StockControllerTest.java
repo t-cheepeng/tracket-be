@@ -19,10 +19,7 @@ import com.tcheepeng.tracket.stock.controller.request.TradeStockRequest;
 import com.tcheepeng.tracket.stock.model.AssetClass;
 import com.tcheepeng.tracket.stock.model.Stock;
 import com.tcheepeng.tracket.stock.service.StockService;
-import java.util.Arrays;
-import java.util.Currency;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,7 +73,16 @@ public class StockControllerTest {
   }
 
   private static Stream<Arguments> getDataIntegrityViolationsTradeStockRequests() {
+    Set<BusinessValidations> validationsToBeValidated =
+        Set.of(
+            BK_ACCOUNT_STOCK_CURRENCY_MUST_BE_SAME,
+            BK_STOCK_NOT_DELETED,
+            BK_ACCOUNT_NOT_DELETED,
+            BK_SELL_WHAT_IS_BOUGHT,
+            BK_SELL_MUST_HAVE_BUY_ID,
+            BK_SELL_WRONG_STOCK);
     return Arrays.stream(BusinessValidations.values())
+        .filter(validationsToBeValidated::contains)
         .map(
             validations -> {
               String code = "";
@@ -192,11 +198,11 @@ public class StockControllerTest {
     when(service.getAllStocks()).thenReturn(List.of(testStock1, testStock2));
 
     MvcResult result =
-            mockMvc
-                    .perform(get("/api/stock/").contentType(MediaType.APPLICATION_JSON))
-                    .andDo(print())
-                    .andExpect(status().isOk())
-                    .andReturn();
+        mockMvc
+            .perform(get("/api/stock/").contentType(MediaType.APPLICATION_JSON))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andReturn();
 
     String jsonBody = result.getResponse().getContentAsString();
     String expectedJson =
@@ -209,15 +215,14 @@ public class StockControllerTest {
     when(service.getAllStocks()).thenReturn(List.of());
 
     MvcResult result =
-            mockMvc
-                    .perform(get("/api/stock/").contentType(MediaType.APPLICATION_JSON))
-                    .andDo(print())
-                    .andExpect(status().isOk())
-                    .andReturn();
+        mockMvc
+            .perform(get("/api/stock/").contentType(MediaType.APPLICATION_JSON))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andReturn();
 
     String jsonBody = result.getResponse().getContentAsString();
-    String expectedJson =
-            "{\"status\":\"SUCCESS\",\"errors\":null,\"data\":{\"stocks\":[]}}";
+    String expectedJson = "{\"status\":\"SUCCESS\",\"errors\":null,\"data\":{\"stocks\":[]}}";
     assertEquals(expectedJson, jsonBody, JSONCompareMode.STRICT);
   }
 
