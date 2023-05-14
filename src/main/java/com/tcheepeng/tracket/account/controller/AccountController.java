@@ -253,6 +253,26 @@ public class AccountController {
     return new ResponseEntity<>(Constants.EMPTY_SUCCESS_REPLY, HttpStatus.OK);
   }
 
+  @Operation(summary = "Deposit, withdraw, or transfer money from an account")
+  @ApiResponses(
+      value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "Transaction is created successfully",
+            content = {
+              @Content(
+                  schema = @Schema(implementation = ApiResponse.class),
+                  examples = {
+                    @ExampleObject(
+                        value =
+                            """
+                              {
+                                "status": "SUCCESS"
+                              }
+                            """)
+                  })
+            }),
+      })
   @PostMapping(
       value = "/transact",
       consumes = MediaType.APPLICATION_JSON_VALUE,
