@@ -1,5 +1,6 @@
 package com.tcheepeng.tracket.account.service;
 
+import static com.tcheepeng.tracket.common.Constants.ONE_DOLLAR_IN_MILLICENTS;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -109,6 +110,7 @@ public class AccountServiceTest {
     expectedTransaction.setAccountIdFrom(0);
     expectedTransaction.setAmountInCents(1000);
     expectedTransaction.setTransactionType(AccountTransactionType.DEPOSIT);
+    expectedTransaction.setExchangeRateInMilli(ONE_DOLLAR_IN_MILLICENTS);
 
     assertThat(transactionCaptor.getValue()).isEqualTo(expectedTransaction);
     verify(accountRepository).updateAmountById(0, 1000);
@@ -132,6 +134,7 @@ public class AccountServiceTest {
     expectedTransaction.setAccountIdFrom(0);
     expectedTransaction.setAmountInCents(1000);
     expectedTransaction.setTransactionType(AccountTransactionType.WITHDRAW);
+    expectedTransaction.setExchangeRateInMilli(ONE_DOLLAR_IN_MILLICENTS);
 
     assertThat(transactionCaptor.getValue()).isEqualTo(expectedTransaction);
     verify(accountRepository).updateAmountById(0, -1000);
@@ -145,5 +148,35 @@ public class AccountServiceTest {
     assertThatExceptionOfType(DataIntegrityViolationException.class)
         .isThrownBy(() -> accountService.transactAccount(request))
         .withMessage("Violation of BK_ACCOUNT_MUST_EXIST in account transactions: 0");
+  }
+
+  @Test
+  void Transfer_to_account_is_successful() {
+    AccountTransactionRequest request = TestHelper.getTransferRequest();
+    assertThat(request.getAccountIdTo()).isNotNull();
+    Account accountFrom = TestHelper.getTestAccount();
+    Account accountTo = TestHelper.getTestAccount();
+    accountTo.setId(1);
+
+    when(timeOperator.getCurrentTimestamp()).thenReturn(Timestamp.from(Instant.ofEpochMilli(1000)));
+    when(accountRepository.findById(request.getAccountIdFrom())).thenReturn(Optional.of(accountFrom));
+    when(accountRepository.findById(request.getAccountIdTo())).thenReturn(Optional.of(accountTo));
+
+    accountService.transactAccount(request);
+
+    ArgumentCaptor<AccountTransactions> transactionCaptor =
+            ArgumentCaptor.forClass(AccountTransactions.class);
+    verify(transactionsRepository).save(transactionCaptor.capture());
+    AccountTransactions expectedTransaction = new AccountTransactions();
+    expectedTransaction.setTransactionTs(Timestamp.from(Instant.ofEpochMilli(1000)));
+    expectedTransaction.setAccountIdTo(1);
+    expectedTransaction.setAccountIdFrom(0);
+    expectedTransaction.setAmountInCents(254);
+    expectedTransaction.setExchangeRateInMilli(74560);
+    expectedTransaction.setTransactionType(AccountTransactionType.TRANSFER);
+
+    assertThat(transactionCaptor.getValue()).isEqualTo(expectedTransaction);
+    verify(accountRepository).updateAmountById(0, -254);
+    verify(accountRepository).updateAmountById(1, 189);
   }
 }

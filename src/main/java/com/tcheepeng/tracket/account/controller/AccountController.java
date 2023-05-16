@@ -6,6 +6,7 @@ import com.tcheepeng.tracket.account.controller.request.PatchAccountRequest;
 import com.tcheepeng.tracket.account.controller.response.AccountResponse;
 import com.tcheepeng.tracket.account.controller.response.AccountsResponse;
 import com.tcheepeng.tracket.account.model.Account;
+import com.tcheepeng.tracket.account.model.AccountTransactionType;
 import com.tcheepeng.tracket.account.service.AccountService;
 import com.tcheepeng.tracket.common.Constants;
 import com.tcheepeng.tracket.common.response.ApiError;
@@ -17,6 +18,7 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.http.HttpStatus;
@@ -279,19 +281,39 @@ public class AccountController {
       produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<ApiResponse> transactAccount(
       @Valid @RequestBody AccountTransactionRequest request) {
+    List<ApiError> apiErrors = new ArrayList<>(2);
     if (request.getAmountsInCents() < 0) {
+      apiErrors.add(
+          ApiError.builder()
+              .code("amountInCents")
+              .message("Transaction amount must be greater than 0")
+              .build());
+    }
+
+    if (request.getTransactionType() == AccountTransactionType.TRANSFER
+        && (request.getExchangeRateInMilli() == null || request.getExchangeRateInMilli() == 0)) {
+      apiErrors.add(
+          ApiError.builder()
+              .code("exchangeRateInMilli")
+              .message("Exchange rate for transfer must be specified")
+              .build());
+    }
+
+    if (request.getTransactionType() == AccountTransactionType.TRANSFER
+        && request.getAccountIdTo() == null) {
+      apiErrors.add(
+          ApiError.builder()
+              .code("accountIdTo")
+              .message("Account to be transferred to must be specified")
+              .build());
+    }
+
+    if (!apiErrors.isEmpty()) {
       return new ResponseEntity<>(
-          ApiResponse.builder()
-              .status(ApiResponse.Status.FAIL)
-              .errors(
-                  List.of(
-                      ApiError.builder()
-                          .code("amountInCents")
-                          .message("Transaction amount must be greater than 0")
-                          .build()))
-              .build(),
+          ApiResponse.builder().status(ApiResponse.Status.FAIL).errors(apiErrors).build(),
           HttpStatus.BAD_REQUEST);
     }
+
     accountService.transactAccount(request);
     return new ResponseEntity<>(Constants.EMPTY_SUCCESS_REPLY, HttpStatus.OK);
   }

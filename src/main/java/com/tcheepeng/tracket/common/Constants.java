@@ -22,4 +22,6 @@ public class Constants {
 
   public static final ApiResponse EMPTY_SUCCESS_REPLY =
       ApiResponse.builder().status(ApiResponse.Status.SUCCESS).build();
+
+  public static final int ONE_DOLLAR_IN_MILLICENTS = 100000;
 }

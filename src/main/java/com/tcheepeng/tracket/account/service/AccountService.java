@@ -1,5 +1,6 @@
 package com.tcheepeng.tracket.account.service;
 
+import static com.tcheepeng.tracket.common.Constants.ONE_DOLLAR_IN_MILLICENTS;
 import static com.tcheepeng.tracket.common.validation.BusinessValidations.BK_ACCOUNT_MUST_EXIST;
 
 import com.tcheepeng.tracket.account.controller.request.AccountTransactionRequest;
@@ -12,7 +13,10 @@ import com.tcheepeng.tracket.account.repository.AccountRepository;
 import com.tcheepeng.tracket.account.repository.AccountTransactionsRepository;
 import com.tcheepeng.tracket.common.service.TimeOperator;
 import jakarta.transaction.Transactional;
+
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -90,8 +94,12 @@ public class AccountService {
   }
 
   private void handleTransferAccount(AccountTransactionRequest request) {
-    // TODO: Support transfers
-    return;
+    Objects.requireNonNull(request.getExchangeRateInMilli());
+    Objects.requireNonNull(request.getAccountIdTo());
+    getTransactionFromRequest(request);
+    accountRepository.updateAmountById(request.getAccountIdFrom(), -request.getAmountsInCents());
+    int currencyAfterTransfer = request.getAmountsInCents() * request.getExchangeRateInMilli() / ONE_DOLLAR_IN_MILLICENTS;
+    accountRepository.updateAmountById(request.getAccountIdTo(), currencyAfterTransfer);
   }
 
   private void getTransactionFromRequest(AccountTransactionRequest request) {
@@ -101,6 +109,10 @@ public class AccountService {
     transaction.setTransactionTs(timeOperator.getCurrentTimestamp());
     transaction.setTransactionType(request.getTransactionType());
     transaction.setAmountInCents(request.getAmountsInCents());
+    transaction.setExchangeRateInMilli(
+        request.getExchangeRateInMilli() == null
+            ? ONE_DOLLAR_IN_MILLICENTS
+            : request.getExchangeRateInMilli());
 
     transactionsRepository.save(transaction);
   }

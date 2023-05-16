@@ -137,4 +137,14 @@ public class TestHelper {
             .transactionType(AccountTransactionType.WITHDRAW)
             .build();
   }
+
+  public static AccountTransactionRequest getTransferRequest() {
+    return AccountTransactionRequest.builder()
+            .accountIdFrom(0)
+            .accountIdTo(1)
+            .amountsInCents(254)
+            .transactionType(AccountTransactionType.TRANSFER)
+            .exchangeRateInMilli(74560)
+            .build();
+  }
 }

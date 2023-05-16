@@ -13,4 +13,5 @@ public class AccountTransactionRequest {
   @Nullable private Integer accountIdTo;
   private int amountsInCents;
   private AccountTransactionType transactionType;
+  @Nullable private Integer exchangeRateInMilli;
 }

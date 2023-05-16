@@ -1,5 +1,6 @@
 package com.tcheepeng.tracket.account.controller;
 
+import static com.tcheepeng.tracket.common.Constants.ONE_DOLLAR_IN_MILLICENTS;
 import static com.tcheepeng.tracket.common.TestHelper.assertInternalServerError;
 import static com.tcheepeng.tracket.common.validation.BusinessValidations.BK_ACCOUNT_MUST_EXIST;
 import static org.mockito.Mockito.*;
@@ -12,6 +13,7 @@ import com.tcheepeng.tracket.account.controller.request.AccountTransactionReques
 import com.tcheepeng.tracket.account.controller.request.CreateAccountRequest;
 import com.tcheepeng.tracket.account.controller.request.PatchAccountRequest;
 import com.tcheepeng.tracket.account.model.Account;
+import com.tcheepeng.tracket.account.model.AccountTransactionType;
 import com.tcheepeng.tracket.account.service.AccountService;
 import com.tcheepeng.tracket.common.TestHelper;
 import com.tcheepeng.tracket.integration.common.TestWebSecurityConfiguration;
@@ -528,5 +530,53 @@ class AccountControllerTest {
         "{\"status\":\"FAIL\",\"errors\":[{\"code\":\"accountId\",\"message\":\"Account does not exist\"}],\"data\":null}";
     assertEquals(
         result.getResponse().getContentAsString(), expectedJsonReply, JSONCompareMode.STRICT);
+  }
+
+  @Test
+  void Transfer_non_existent_exchange_rate_fails() throws Exception {
+    AccountTransactionRequest request = TestHelper.getDepositRequest();
+    request.setTransactionType(AccountTransactionType.TRANSFER);
+    request.setExchangeRateInMilli(null);
+    request.setAccountIdTo(1);
+    ObjectMapper mapper = new ObjectMapper();
+
+    MvcResult result =
+            mockMvc
+                    .perform(
+                            post("/api/account/transact")
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content(mapper.writeValueAsString(request)))
+                    .andDo(print())
+                    .andExpect(status().isBadRequest())
+                    .andReturn();
+
+    String expectedJsonReply =
+            "{\"status\":\"FAIL\",\"errors\":[{\"code\":\"exchangeRateInMilli\",\"message\":\"Exchange rate for transfer must be specified\"}],\"data\":null}";
+    assertEquals(
+            result.getResponse().getContentAsString(), expectedJsonReply, JSONCompareMode.STRICT);
+  }
+
+  @Test
+  void Transfer_non_existent_account_id_fails() throws Exception {
+    AccountTransactionRequest request = TestHelper.getDepositRequest();
+    request.setTransactionType(AccountTransactionType.TRANSFER);
+    request.setExchangeRateInMilli(ONE_DOLLAR_IN_MILLICENTS);
+    request.setAccountIdTo(null);
+    ObjectMapper mapper = new ObjectMapper();
+
+    MvcResult result =
+            mockMvc
+                    .perform(
+                            post("/api/account/transact")
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content(mapper.writeValueAsString(request)))
+                    .andDo(print())
+                    .andExpect(status().isBadRequest())
+                    .andReturn();
+
+    String expectedJsonReply =
+            "{\"status\":\"FAIL\",\"errors\":[{\"code\":\"accountIdTo\",\"message\":\"Account to be transferred to must be specified\"}],\"data\":null}";
+    assertEquals(
+            result.getResponse().getContentAsString(), expectedJsonReply, JSONCompareMode.STRICT);
   }
 }

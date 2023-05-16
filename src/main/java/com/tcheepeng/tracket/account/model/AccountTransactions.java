@@ -35,4 +35,8 @@ public class AccountTransactions {
   @Column(name = "transaction_type")
   @Enumerated(value=EnumType.STRING)
   private AccountTransactionType transactionType;
+
+  @Basic
+  @Column(name = "exchange_rate_in_milli")
+  private int exchangeRateInMilli;
 }
