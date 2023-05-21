@@ -4,17 +4,12 @@ import com.tcheepeng.tracket.account.model.Account;
 import com.tcheepeng.tracket.account.repository.AccountRepository;
 import com.tcheepeng.tracket.common.service.TimeOperator;
 import com.tcheepeng.tracket.common.validation.BusinessValidations;
-import com.tcheepeng.tracket.stock.api.ApiStrategy;
-import com.tcheepeng.tracket.stock.api.ExternalSearchResponse;
-import com.tcheepeng.tracket.stock.api.StockApi;
-import com.tcheepeng.tracket.stock.api.strategies.BaseStrategy;
+import com.tcheepeng.tracket.external.api.*;
+import com.tcheepeng.tracket.external.api.fetcher.ApiFetcher;
 import com.tcheepeng.tracket.stock.controller.request.CreateStockRequest;
 import com.tcheepeng.tracket.stock.controller.request.PatchStockRequest;
 import com.tcheepeng.tracket.stock.controller.request.TradeStockRequest;
-import com.tcheepeng.tracket.stock.model.Stock;
-import com.tcheepeng.tracket.stock.model.TickerApi;
-import com.tcheepeng.tracket.stock.model.Trade;
-import com.tcheepeng.tracket.stock.model.TradeType;
+import com.tcheepeng.tracket.stock.model.*;
 import com.tcheepeng.tracket.stock.repository.StockRepository;
 import com.tcheepeng.tracket.stock.repository.TickerApiRepository;
 import com.tcheepeng.tracket.stock.repository.TradeRepository;
@@ -23,10 +18,12 @@ import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class StockService {
 
   private final StockRepository stockRepository;
@@ -49,8 +46,7 @@ public class StockService {
   }
 
   public List<ExternalSearchResponse> queryExternalStockApi(String query) {
-    BaseStrategy baseStrategy = StockApi.of(ApiStrategy.YAHOO_FINANCE);
-    return baseStrategy.search(query);
+    return ExternalApi.yahooFinance().search(query);
   }
 
   public Optional<Stock> getStock(String stockName) {
@@ -71,7 +67,7 @@ public class StockService {
     stock.setDisplayTickerSymbol(request.getDisplayTickerSymbol());
     stockRepository.save(stock);
 
-    Map<ApiStrategy, String> tickerToApi = request.getApiTickers();
+    Map<ApiFetcher, String> tickerToApi = request.getApiTickers();
     tickerApiRepository.saveAll(
         tickerToApi.entrySet().stream()
             .map(

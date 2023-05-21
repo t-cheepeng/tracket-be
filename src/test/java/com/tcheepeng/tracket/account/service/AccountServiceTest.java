@@ -5,13 +5,16 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.tcheepeng.tracket.account.controller.request.AccountTransactionRequest;
+import com.tcheepeng.tracket.account.controller.response.AccountResponse;
 import com.tcheepeng.tracket.account.model.Account;
 import com.tcheepeng.tracket.account.model.AccountTransactionType;
 import com.tcheepeng.tracket.account.model.AccountTransactions;
+import com.tcheepeng.tracket.account.model.AccountType;
 import com.tcheepeng.tracket.account.repository.AccountRepository;
 import com.tcheepeng.tracket.account.repository.AccountTransactionsRepository;
 import com.tcheepeng.tracket.common.TestHelper;
 import com.tcheepeng.tracket.common.service.TimeOperator;
+import com.tcheepeng.tracket.stock.repository.TradeRepository;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Optional;
@@ -32,23 +35,47 @@ public class AccountServiceTest {
 
   @Mock AccountTransactionsRepository transactionsRepository;
 
+  @Mock TradeRepository tradeRepository;
+
   @Mock TimeOperator timeOperator;
 
   @Test
   void Get_account_is_successful() {
     Optional<Account> testAccount = Optional.of(TestHelper.getTestAccount());
     when(accountRepository.findById(1)).thenReturn(testAccount);
+    when(tradeRepository.findByAccount(1)).thenReturn(TestHelper.getAllTradesForTestAccount());
 
-    Optional<Account> account = accountService.getAccount(1);
-    assertThat(account).isEqualTo(testAccount);
+    Optional<AccountResponse> account = accountService.getAccount(1);
+    AccountResponse expected =
+        AccountResponse.builder()
+            .id(1)
+            .name("Test Account")
+            .currency("SGD")
+            .accountType(AccountType.INVESTMENT)
+            .description("Account description")
+            .cashInCents(1000)
+            .assetValueInCents(1000)
+            .build();
+    assertThat(account).isNotEmpty().isEqualTo(expected);
   }
 
   @Test
   void Get_account_no_account_is_empty() {
     when(accountRepository.findById(1)).thenReturn(Optional.empty());
 
-    Optional<Account> account = accountService.getAccount(1);
-    assertThat(account).isEqualTo(Optional.empty());
+    Optional<AccountResponse> account = accountService.getAccount(1);
+    assertThat(account).isEmpty();
+  }
+
+  @Test
+  void Get_deleted_account_is_empty() {
+    Account account = TestHelper.getTestAccount();
+    account.setDeleted(true);
+    when(accountRepository.findById(1)).thenReturn(Optional.of(account));
+
+    Optional<AccountResponse> result = accountService.getAccount(1);
+
+    assertThat(result).isEmpty();
   }
 
   @Test
@@ -159,13 +186,14 @@ public class AccountServiceTest {
     accountTo.setId(1);
 
     when(timeOperator.getCurrentTimestamp()).thenReturn(Timestamp.from(Instant.ofEpochMilli(1000)));
-    when(accountRepository.findById(request.getAccountIdFrom())).thenReturn(Optional.of(accountFrom));
+    when(accountRepository.findById(request.getAccountIdFrom()))
+        .thenReturn(Optional.of(accountFrom));
     when(accountRepository.findById(request.getAccountIdTo())).thenReturn(Optional.of(accountTo));
 
     accountService.transactAccount(request);
 
     ArgumentCaptor<AccountTransactions> transactionCaptor =
-            ArgumentCaptor.forClass(AccountTransactions.class);
+        ArgumentCaptor.forClass(AccountTransactions.class);
     verify(transactionsRepository).save(transactionCaptor.capture());
     AccountTransactions expectedTransaction = new AccountTransactions();
     expectedTransaction.setTransactionTs(Timestamp.from(Instant.ofEpochMilli(1000)));

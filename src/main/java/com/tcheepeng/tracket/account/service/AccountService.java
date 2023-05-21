@@ -6,15 +6,17 @@ import static com.tcheepeng.tracket.common.validation.BusinessValidations.BK_ACC
 import com.tcheepeng.tracket.account.controller.request.AccountTransactionRequest;
 import com.tcheepeng.tracket.account.controller.request.CreateAccountRequest;
 import com.tcheepeng.tracket.account.controller.request.PatchAccountRequest;
+import com.tcheepeng.tracket.account.controller.response.AccountResponse;
 import com.tcheepeng.tracket.account.model.Account;
 import com.tcheepeng.tracket.account.model.AccountTransactionType;
 import com.tcheepeng.tracket.account.model.AccountTransactions;
 import com.tcheepeng.tracket.account.repository.AccountRepository;
 import com.tcheepeng.tracket.account.repository.AccountTransactionsRepository;
 import com.tcheepeng.tracket.common.service.TimeOperator;
+import com.tcheepeng.tracket.stock.model.Trade;
+import com.tcheepeng.tracket.stock.model.TradeType;
+import com.tcheepeng.tracket.stock.repository.TradeRepository;
 import jakarta.transaction.Transactional;
-
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -27,18 +29,42 @@ public class AccountService {
   private final AccountRepository accountRepository;
   private final AccountTransactionsRepository transactionsRepository;
   private final TimeOperator timeOperator;
+  private final TradeRepository tradeRepository;
 
   public AccountService(
       final AccountRepository accountRepository,
       final AccountTransactionsRepository transactionsRepository,
+      final TradeRepository tradeRepository,
       final TimeOperator timeOperator) {
     this.accountRepository = accountRepository;
     this.transactionsRepository = transactionsRepository;
+    this.tradeRepository = tradeRepository;
     this.timeOperator = timeOperator;
   }
 
-  public Optional<Account> getAccount(Integer id) {
-    return accountRepository.findById(id);
+  public Optional<AccountResponse> getAccount(Integer id) {
+    Optional<Account> maybeAccount = accountRepository.findById(id);
+    if (maybeAccount.isEmpty()) {
+      return Optional.empty();
+    }
+
+    Account acc = maybeAccount.get();
+    if (acc.isDeleted()) {
+      return Optional.empty();
+    }
+
+    List<Trade> trades = tradeRepository.findByAccount(acc.getId());
+    int assetValues = sumAllTrades(trades);
+    return Optional.of(
+        AccountResponse.builder()
+            .id(acc.getId())
+            .name(acc.getName())
+            .accountType(acc.getAccountType())
+            .cashInCents(acc.getCashInCents())
+            .description(acc.getDescription())
+            .currency(acc.getCurrency())
+            .assetValueInCents(assetValues)
+            .build());
   }
 
   @Transactional
@@ -66,8 +92,24 @@ public class AccountService {
     accountRepository.softDeleteById(id);
   }
 
-  public List<Account> getAllAccounts() {
-    return accountRepository.findAll();
+  public List<AccountResponse> getAllAccounts() {
+    return accountRepository.findAll().stream()
+        .filter(account -> !account.isDeleted())
+        .map(
+            account -> {
+              AccountResponse.AccountResponseBuilder accountBuilder =
+                  AccountResponse.builder()
+                      .id(account.getId())
+                      .name(account.getName())
+                      .accountType(account.getAccountType())
+                      .cashInCents(account.getCashInCents())
+                      .description(account.getDescription())
+                      .currency(account.getCurrency());
+              List<Trade> tradesByAccount = tradeRepository.findByAccount(account.getId());
+              int assetValue = sumAllTrades(tradesByAccount);
+              return accountBuilder.assetValueInCents(assetValue).build();
+            })
+        .toList();
   }
 
   @Transactional
@@ -98,7 +140,8 @@ public class AccountService {
     Objects.requireNonNull(request.getAccountIdTo());
     getTransactionFromRequest(request);
     accountRepository.updateAmountById(request.getAccountIdFrom(), -request.getAmountsInCents());
-    int currencyAfterTransfer = request.getAmountsInCents() * request.getExchangeRateInMilli() / ONE_DOLLAR_IN_MILLICENTS;
+    int currencyAfterTransfer =
+        request.getAmountsInCents() * request.getExchangeRateInMilli() / ONE_DOLLAR_IN_MILLICENTS;
     accountRepository.updateAmountById(request.getAccountIdTo(), currencyAfterTransfer);
   }
 
@@ -140,5 +183,14 @@ public class AccountService {
               + " in account transactions: "
               + request.getAccountIdTo());
     }
+  }
+
+  private int sumAllTrades(List<Trade> trades) {
+    return trades.stream()
+        .map(
+            trade ->
+                (trade.getNumOfUnits() * trade.getPricePerUnit() - trade.getFee())
+                    * (trade.getTradeType() == TradeType.SELL ? -1 : 1))
+        .reduce(0, (Integer::sum));
   }
 }

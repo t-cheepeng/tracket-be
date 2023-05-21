@@ -18,4 +18,5 @@ public class AccountResponse implements ResponseData {
   @Nullable private String description;
   @NotBlank private String name;
   @PositiveOrZero private int cashInCents;
+  @PositiveOrZero private int assetValueInCents;
 }

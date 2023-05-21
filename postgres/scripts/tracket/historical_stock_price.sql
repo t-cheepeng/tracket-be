@@ -15,7 +15,7 @@ create table tracket.historical_stock_price
 
 comment on table tracket.historical_stock_price is 'Historical price table for stocks';
 
-comment on column tracket.historical_stock_price.price_ts is 'Timestamp where the price is retrieved';
+comment on column tracket.historical_stock_price.price_ts is 'Timestamp where the price is indicative. i.e. at this timestamp, the stock has this price';
 
 comment on column tracket.historical_stock_price.price_in_cents is 'Price of the stock in cents';
 

@@ -5,7 +5,6 @@ import com.tcheepeng.tracket.account.controller.request.CreateAccountRequest;
 import com.tcheepeng.tracket.account.controller.request.PatchAccountRequest;
 import com.tcheepeng.tracket.account.controller.response.AccountResponse;
 import com.tcheepeng.tracket.account.controller.response.AccountsResponse;
-import com.tcheepeng.tracket.account.model.Account;
 import com.tcheepeng.tracket.account.model.AccountTransactionType;
 import com.tcheepeng.tracket.account.service.AccountService;
 import com.tcheepeng.tracket.common.Constants;
@@ -56,7 +55,8 @@ public class AccountController {
                                     "currency": "SGD ",
                                     "description": "lorem ipsum",
                                     "name": "Tiger",
-                                    "cashInCents": 1000
+                                    "cashInCents": 1000,
+                                    "assetValueInCents": 1000
                                   }
                               }
                              """)
@@ -89,34 +89,29 @@ public class AccountController {
   public ResponseEntity<ApiResponse> getAccount(
       @Parameter(description = "ID of the account to get", example = "1") @PathVariable
           Integer accountId) {
-    Optional<Account> optionalAccount = accountService.getAccount(accountId);
-    if (optionalAccount.isEmpty() || optionalAccount.get().isDeleted()) {
-      return new ResponseEntity<>(
-          ApiResponse.builder()
-              .status(ApiResponse.Status.FAIL)
-              .errors(
-                  List.of(
-                      ApiError.builder()
-                          .message("Unable to find account or account is deleted")
-                          .code("404")
-                          .build()))
-              .build(),
-          HttpStatus.NOT_FOUND);
-    }
-
-    Account account = optionalAccount.get();
-    AccountResponse accountData =
-        AccountResponse.builder()
-            .id(account.getId())
-            .accountType(account.getAccountType())
-            .currency(account.getCurrency())
-            .description(account.getDescription())
-            .name(account.getName())
-            .cashInCents(account.getCashInCents())
-            .build();
-    return new ResponseEntity<>(
-        ApiResponse.builder().status(ApiResponse.Status.SUCCESS).data(accountData).build(),
-        HttpStatus.OK);
+    Optional<AccountResponse> optionalAccount = accountService.getAccount(accountId);
+    return optionalAccount
+        .map(
+            accountResponse ->
+                new ResponseEntity<>(
+                    ApiResponse.builder()
+                        .status(ApiResponse.Status.SUCCESS)
+                        .data(accountResponse)
+                        .build(),
+                    HttpStatus.OK))
+        .orElseGet(
+            () ->
+                new ResponseEntity<>(
+                    ApiResponse.builder()
+                        .status(ApiResponse.Status.FAIL)
+                        .errors(
+                            List.of(
+                                ApiError.builder()
+                                    .message("Unable to find account or account is deleted")
+                                    .code("404")
+                                    .build()))
+                        .build(),
+                    HttpStatus.NOT_FOUND));
   }
 
   @Operation(summary = "Get all accounts")
@@ -140,7 +135,8 @@ public class AccountController {
                                     "currency": "SGD ",
                                     "description": "lorem ipsum",
                                     "name": "Tiger",
-                                    "cashInCents": 1000
+                                    "cashInCents": 1000,
+                                    "assetValueInCents": 1000
                                   }
                               }
                              """)
@@ -149,20 +145,7 @@ public class AccountController {
       })
   @GetMapping(value = "/", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<ApiResponse> getAllAccounts() {
-    List<AccountResponse> accounts =
-        accountService.getAllAccounts().stream()
-            .filter(account -> !account.isDeleted())
-            .map(
-                account ->
-                    AccountResponse.builder()
-                        .id(account.getId())
-                        .accountType(account.getAccountType())
-                        .currency(account.getCurrency())
-                        .description(account.getDescription())
-                        .name(account.getName())
-                        .cashInCents(account.getCashInCents())
-                        .build())
-            .toList();
+    List<AccountResponse> accounts = accountService.getAllAccounts();
     return new ResponseEntity<>(
         ApiResponse.builder()
             .status(ApiResponse.Status.SUCCESS)

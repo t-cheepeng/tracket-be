@@ -1,6 +1,6 @@
 package com.tcheepeng.tracket.stock.model;
 
-import com.tcheepeng.tracket.stock.api.ApiStrategy;
+import com.tcheepeng.tracket.external.api.fetcher.ApiFetcher;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -20,9 +20,13 @@ public class TickerApi {
     @Basic
     @Column(name = "api")
     @Enumerated(EnumType.STRING)
-    private ApiStrategy api;
+    private ApiFetcher api;
 
     @Basic
     @Column(name = "name")
     private String name;
+
+    @OneToOne()
+    @JoinColumn(name="name", insertable = false, updatable = false)
+    private Stock stock;
 }

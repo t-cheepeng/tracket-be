@@ -1,11 +1,10 @@
-package com.tcheepeng.tracket.stock.api.strategies;
+package com.tcheepeng.tracket.external.api.fetcher;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tcheepeng.tracket.stock.api.ApiStrategy;
-import com.tcheepeng.tracket.stock.api.ExternalApiResponse;
-import com.tcheepeng.tracket.stock.api.ExternalSearchResponse;
-import com.tcheepeng.tracket.stock.api.StockApiException;
+import com.tcheepeng.tracket.external.api.ExternalApiException;
+import com.tcheepeng.tracket.external.api.ExternalApiResponse;
+import com.tcheepeng.tracket.external.api.ExternalSearchResponse;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -23,42 +22,40 @@ import yahoofinance.Stock;
 import yahoofinance.YahooFinance;
 
 @Slf4j
-public class YahooFinanceStrategy implements BaseStrategy {
+public class YahooFinanceFetcher {
 
   private final OkHttpClient httpClient;
   private final ObjectMapper objectMapper;
   private String ticker;
   private boolean isDaily = false;
 
-  private YahooFinanceStrategy() {
+  private YahooFinanceFetcher() {
     this.httpClient = new OkHttpClient();
     this.objectMapper = new ObjectMapper();
   }
 
-  public static BaseStrategy init() {
-    return new YahooFinanceStrategy();
+  public static YahooFinanceFetcher init() {
+    return new YahooFinanceFetcher();
   }
 
-  @Override
-  public BaseStrategy withTicker(String ticker) {
+  public YahooFinanceFetcher withTicker(String ticker) {
     this.ticker = ticker;
     return this;
   }
 
-  @Override
-  public BaseStrategy daily() {
+  public YahooFinanceFetcher daily() {
     isDaily = true;
     return this;
   }
 
-  @Override
-  public ExternalApiResponse fetch() throws StockApiException {
+  public ExternalApiResponse fetch() throws ExternalApiException {
     if (ticker == null) {
-      throw new StockApiException("Stock ticker cannot be null");
+      throw new ExternalApiException("Stock ticker cannot be null");
     }
 
     try {
       Stock stock = YahooFinance.get(ticker);
+      log.info("External Stock: {}", stock);
       String name = stock.getName();
       BigDecimal price = stock.getQuote().getPrice();
       String currency = stock.getCurrency();
@@ -68,14 +65,13 @@ public class YahooFinanceStrategy implements BaseStrategy {
           .currency(Currency.getInstance(currency))
           .build();
     } catch (IOException e) {
-      throw new StockApiException("Unable to find stocker ticker: " + ticker);
+      throw new ExternalApiException("Unable to find stock ticker: " + ticker);
     } catch (Exception e) {
-      throw new StockApiException(e);
+      throw new ExternalApiException(e);
     }
   }
 
-  @Override
-  public List<ExternalSearchResponse> search(String query) throws StockApiException {
+  public List<ExternalSearchResponse> search(String query) throws ExternalApiException {
     String searchUrl =
         UriComponentsBuilder.fromUriString("https://query2.finance.yahoo.com/v1/finance/search")
             .queryParam("q", UriUtils.encodePathSegment(query, StandardCharsets.UTF_8))
@@ -115,7 +111,7 @@ public class YahooFinanceStrategy implements BaseStrategy {
       for (final JsonNode quote : quotes) {
         log.debug("Running through yahoo finance qoutes: {}", quote);
         ExternalSearchResponse.ExternalSearchResponseBuilder builder =
-            ExternalSearchResponse.builder().apiUsed(ApiStrategy.YAHOO_FINANCE);
+            ExternalSearchResponse.builder();
 
         if (quote.hasNonNull("longname")) {
           builder = builder.stockName(quote.get("longname").asText(""));
@@ -149,7 +145,7 @@ public class YahooFinanceStrategy implements BaseStrategy {
       return result;
     } catch (IOException e) {
       log.error("Unable to fetch yahoo search api: ", e);
-      throw new StockApiException(e);
+      throw new ExternalApiException(e);
     }
   }
 

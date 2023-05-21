@@ -10,4 +10,6 @@ public interface StockRepository extends JpaRepository<Stock, String> {
   @Modifying
   @Query("UPDATE Stock s SET s.isDeleted=true WHERE s.name=:name")
   void softDeleteByName(@Param(value = "name") String name);
+
+
 }

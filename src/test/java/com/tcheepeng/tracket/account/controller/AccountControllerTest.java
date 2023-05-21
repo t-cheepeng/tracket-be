@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.tcheepeng.tracket.account.controller.request.AccountTransactionRequest;
 import com.tcheepeng.tracket.account.controller.request.CreateAccountRequest;
 import com.tcheepeng.tracket.account.controller.request.PatchAccountRequest;
+import com.tcheepeng.tracket.account.controller.response.AccountResponse;
 import com.tcheepeng.tracket.account.model.Account;
 import com.tcheepeng.tracket.account.model.AccountTransactionType;
 import com.tcheepeng.tracket.account.service.AccountService;
@@ -148,7 +149,7 @@ class AccountControllerTest {
 
   @Test
   void Get_account_normally_is_successful() throws Exception {
-    Account returnedAccount = TestHelper.getTestAccount();
+    AccountResponse returnedAccount = TestHelper.getTestAccountResponse();
     when(service.getAccount(1)).thenReturn(Optional.of(returnedAccount));
 
     MvcResult result =
@@ -159,15 +160,13 @@ class AccountControllerTest {
             .andReturn();
     String jsonBody = result.getResponse().getContentAsString();
     String expectedJson =
-        "{\"status\":\"SUCCESS\",\"errors\":null,\"data\":{\"id\":1,\"accountType\":\"INVESTMENT\",\"currency\":\"SGD\",\"description\":\"Account description\",\"name\":\"Test Account\",\"cashInCents\":1000}}";
+        "{\"status\":\"SUCCESS\",\"errors\":null,\"data\":{\"id\":1,\"accountType\":\"INVESTMENT\",\"currency\":\"SGD\",\"description\":\"Account description\",\"name\":\"Test Account\",\"cashInCents\":1000,\"assetValueInCents\":1000}}";
     assertEquals(expectedJson, jsonBody, JSONCompareMode.STRICT);
   }
 
   @Test
   void Get_account_that_is_deleted() throws Exception {
-    Account returnedAccount = TestHelper.getTestAccount();
-    returnedAccount.setDeleted(true);
-    when(service.getAccount(1)).thenReturn(Optional.of(returnedAccount));
+    when(service.getAccount(1)).thenReturn(Optional.empty());
 
     MvcResult result =
         mockMvc
@@ -224,12 +223,9 @@ class AccountControllerTest {
   }
 
   @Test
-  void Get_all_account_with_deleted_account_is_successful() throws Exception {
-    Account deletedAccount = TestHelper.getTestAccount();
-    Account notDeletedAccount = TestHelper.getTestAccount();
-    deletedAccount.setDeleted(true);
-    deletedAccount.setId(2);
-    when(service.getAllAccounts()).thenReturn(List.of(notDeletedAccount, deletedAccount));
+  void Get_all_account_is_successful() throws Exception {
+    AccountResponse account = TestHelper.getTestAccountResponse();
+    when(service.getAllAccounts()).thenReturn(List.of(account));
 
     MvcResult result =
         mockMvc
@@ -239,7 +235,7 @@ class AccountControllerTest {
             .andReturn();
     String jsonBody = result.getResponse().getContentAsString();
     String expectedJson =
-        "{\"status\":\"SUCCESS\",\"errors\":null,\"data\":{\"accounts\":[{\"id\":1,\"accountType\":\"INVESTMENT\",\"currency\":\"SGD\",\"description\":\"Account description\",\"name\":\"Test Account\",\"cashInCents\":1000}]}}";
+        "{\"status\":\"SUCCESS\",\"errors\":null,\"data\":{\"accounts\":[{\"id\":1,\"accountType\":\"INVESTMENT\",\"currency\":\"SGD\",\"description\":\"Account description\",\"name\":\"Test Account\",\"cashInCents\":1000,\"assetValueInCents\":1000}]}}";
     assertEquals(jsonBody, expectedJson, JSONCompareMode.STRICT);
   }
 
@@ -541,19 +537,19 @@ class AccountControllerTest {
     ObjectMapper mapper = new ObjectMapper();
 
     MvcResult result =
-            mockMvc
-                    .perform(
-                            post("/api/account/transact")
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .content(mapper.writeValueAsString(request)))
-                    .andDo(print())
-                    .andExpect(status().isBadRequest())
-                    .andReturn();
+        mockMvc
+            .perform(
+                post("/api/account/transact")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(mapper.writeValueAsString(request)))
+            .andDo(print())
+            .andExpect(status().isBadRequest())
+            .andReturn();
 
     String expectedJsonReply =
-            "{\"status\":\"FAIL\",\"errors\":[{\"code\":\"exchangeRateInMilli\",\"message\":\"Exchange rate for transfer must be specified\"}],\"data\":null}";
+        "{\"status\":\"FAIL\",\"errors\":[{\"code\":\"exchangeRateInMilli\",\"message\":\"Exchange rate for transfer must be specified\"}],\"data\":null}";
     assertEquals(
-            result.getResponse().getContentAsString(), expectedJsonReply, JSONCompareMode.STRICT);
+        result.getResponse().getContentAsString(), expectedJsonReply, JSONCompareMode.STRICT);
   }
 
   @Test
@@ -565,18 +561,18 @@ class AccountControllerTest {
     ObjectMapper mapper = new ObjectMapper();
 
     MvcResult result =
-            mockMvc
-                    .perform(
-                            post("/api/account/transact")
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .content(mapper.writeValueAsString(request)))
-                    .andDo(print())
-                    .andExpect(status().isBadRequest())
-                    .andReturn();
+        mockMvc
+            .perform(
+                post("/api/account/transact")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(mapper.writeValueAsString(request)))
+            .andDo(print())
+            .andExpect(status().isBadRequest())
+            .andReturn();
 
     String expectedJsonReply =
-            "{\"status\":\"FAIL\",\"errors\":[{\"code\":\"accountIdTo\",\"message\":\"Account to be transferred to must be specified\"}],\"data\":null}";
+        "{\"status\":\"FAIL\",\"errors\":[{\"code\":\"accountIdTo\",\"message\":\"Account to be transferred to must be specified\"}],\"data\":null}";
     assertEquals(
-            result.getResponse().getContentAsString(), expectedJsonReply, JSONCompareMode.STRICT);
+        result.getResponse().getContentAsString(), expectedJsonReply, JSONCompareMode.STRICT);
   }
 }

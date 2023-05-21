@@ -9,7 +9,6 @@ import com.tcheepeng.tracket.account.repository.AccountRepository;
 import com.tcheepeng.tracket.common.TestHelper;
 import com.tcheepeng.tracket.common.service.TimeOperator;
 import com.tcheepeng.tracket.common.validation.BusinessValidations;
-import com.tcheepeng.tracket.stock.api.ApiStrategy;
 import com.tcheepeng.tracket.stock.controller.request.CreateStockRequest;
 import com.tcheepeng.tracket.stock.controller.request.PatchStockRequest;
 import com.tcheepeng.tracket.stock.controller.request.TradeStockRequest;

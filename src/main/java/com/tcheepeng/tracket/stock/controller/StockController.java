@@ -4,7 +4,7 @@ import com.tcheepeng.tracket.account.controller.response.AccountResponse;
 import com.tcheepeng.tracket.common.Constants;
 import com.tcheepeng.tracket.common.response.ApiError;
 import com.tcheepeng.tracket.common.response.ApiResponse;
-import com.tcheepeng.tracket.stock.api.ExternalSearchResponse;
+import com.tcheepeng.tracket.external.api.ExternalSearchResponse;
 import com.tcheepeng.tracket.stock.controller.request.CreateStockRequest;
 import com.tcheepeng.tracket.stock.controller.request.PatchStockRequest;
 import com.tcheepeng.tracket.stock.controller.request.TradeStockRequest;

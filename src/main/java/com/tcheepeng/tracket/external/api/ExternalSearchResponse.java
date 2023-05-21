@@ -1,6 +1,8 @@
-package com.tcheepeng.tracket.stock.api;
+package com.tcheepeng.tracket.external.api;
 
 import java.util.Currency;
+
+import com.tcheepeng.tracket.external.api.fetcher.ApiFetcher;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,5 +16,5 @@ public class ExternalSearchResponse {
   String stockClass;
   String exchangeCountry;
   double searchScore;
-  ApiStrategy apiUsed;
+  ApiFetcher apiUsed;
 }
