@@ -5,7 +5,6 @@ import com.tcheepeng.tracket.common.validation.ValidCurrency;
 import com.tcheepeng.tracket.common.validation.ValidName;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import lombok.Data;
@@ -24,6 +23,5 @@ public class CreateAccountRequest {
 
   @ValidName private String name;
 
-  @PositiveOrZero(message = "Cash cannot be negative")
-  private int cashInCents;
+  private String cash;
 }

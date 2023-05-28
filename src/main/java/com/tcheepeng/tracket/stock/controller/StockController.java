@@ -4,7 +4,7 @@ import com.tcheepeng.tracket.account.controller.response.AccountResponse;
 import com.tcheepeng.tracket.common.Constants;
 import com.tcheepeng.tracket.common.response.ApiError;
 import com.tcheepeng.tracket.common.response.ApiResponse;
-import com.tcheepeng.tracket.external.api.ExternalSearchResponse;
+import com.tcheepeng.tracket.external.api.model.ExternalSearchResponse;
 import com.tcheepeng.tracket.stock.controller.request.CreateStockRequest;
 import com.tcheepeng.tracket.stock.controller.request.PatchStockRequest;
 import com.tcheepeng.tracket.stock.controller.request.TradeStockRequest;
@@ -368,10 +368,10 @@ public class StockController {
                         .tradeTs(trade.getTradeTs())
                         .tradeType(trade.getTradeType())
                         .numOfUnits(trade.getNumOfUnits())
-                        .pricePerUnit(trade.getPricePerUnit())
+                        .pricePerUnit(trade.getPricePerUnit().toPlainString())
                         .name(trade.getName())
                         .account(trade.getAccount())
-                        .fee(trade.getFee())
+                        .fee(trade.getFee().toPlainString())
                         .buyId(trade.getBuyId())
                         .build())
             .toList();

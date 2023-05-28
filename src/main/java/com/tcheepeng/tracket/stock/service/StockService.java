@@ -6,6 +6,7 @@ import com.tcheepeng.tracket.common.service.TimeOperator;
 import com.tcheepeng.tracket.common.validation.BusinessValidations;
 import com.tcheepeng.tracket.external.api.*;
 import com.tcheepeng.tracket.external.api.fetcher.ApiFetcher;
+import com.tcheepeng.tracket.external.api.model.ExternalSearchResponse;
 import com.tcheepeng.tracket.stock.controller.request.CreateStockRequest;
 import com.tcheepeng.tracket.stock.controller.request.PatchStockRequest;
 import com.tcheepeng.tracket.stock.controller.request.TradeStockRequest;
@@ -15,12 +16,16 @@ import com.tcheepeng.tracket.stock.repository.TickerApiRepository;
 import com.tcheepeng.tracket.stock.repository.TradeRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
+
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+
+import static com.tcheepeng.tracket.common.Utils.toStandardRepresentation;
 
 @Service
 @Slf4j
@@ -119,10 +124,10 @@ public class StockService {
     trade.setTradeTs(timeOperator.getTimestampFromMilliSinceEpoch(request.getTimestamp()));
     trade.setTradeType(request.getTradeType());
     trade.setNumOfUnits(request.getNumOfUnits());
-    trade.setPricePerUnit(request.getPricePerUnitInMilli());
+    trade.setPricePerUnit(toStandardRepresentation(request.getPrice()));
     trade.setName(request.getName());
     trade.setAccount(request.getAccountId());
-    trade.setFee(request.getFeeInMilli() == null ? 0 : request.getFeeInMilli());
+    trade.setFee(request.getFee() == null ? BigDecimal.ZERO : toStandardRepresentation(request.getFee()));
     trade.setBuyId(
         request.getTradeType() == TradeType.BUY || request.getTradeType() == TradeType.DIVIDEND
             ? null

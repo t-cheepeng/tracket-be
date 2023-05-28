@@ -13,9 +13,9 @@ public class TradeResponse implements ResponseData {
     private Timestamp tradeTs;
     private TradeType tradeType;
     private int numOfUnits;
-    private int pricePerUnit;
+    private String pricePerUnit;
     private String name;
     private int account;
-    private int fee;
+    private String fee;
     private Integer buyId;
 }

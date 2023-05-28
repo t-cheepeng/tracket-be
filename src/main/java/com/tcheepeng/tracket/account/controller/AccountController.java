@@ -1,5 +1,7 @@
 package com.tcheepeng.tracket.account.controller;
 
+import static com.tcheepeng.tracket.common.Utils.toStandardRepresentation;
+
 import com.tcheepeng.tracket.account.controller.request.AccountTransactionRequest;
 import com.tcheepeng.tracket.account.controller.request.CreateAccountRequest;
 import com.tcheepeng.tracket.account.controller.request.PatchAccountRequest;
@@ -17,6 +19,7 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -180,6 +183,20 @@ public class AccountController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<ApiResponse> createAccount(
       @Valid @RequestBody CreateAccountRequest request) {
+    if (request.getCash() != null && toStandardRepresentation(request.getCash()).signum() < 0) {
+      return new ResponseEntity<>(
+          ApiResponse.builder()
+              .errors(
+                  List.of(
+                      ApiError.builder()
+                          .code("cash")
+                          .message("Initial cash cannot be negative")
+                          .build()))
+              .status(ApiResponse.Status.FAIL)
+              .build(),
+          HttpStatus.BAD_REQUEST);
+    }
+
     accountService.createAccount(request);
     return new ResponseEntity<>(Constants.EMPTY_SUCCESS_REPLY, HttpStatus.OK);
   }
@@ -265,7 +282,8 @@ public class AccountController {
   public ResponseEntity<ApiResponse> transactAccount(
       @Valid @RequestBody AccountTransactionRequest request) {
     List<ApiError> apiErrors = new ArrayList<>(2);
-    if (request.getAmountsInCents() < 0) {
+    BigDecimal amount = toStandardRepresentation(request.getAmount());
+    if (amount.signum() < 0) {
       apiErrors.add(
           ApiError.builder()
               .code("amountInCents")
@@ -274,7 +292,8 @@ public class AccountController {
     }
 
     if (request.getTransactionType() == AccountTransactionType.TRANSFER
-        && (request.getExchangeRateInMilli() == null || request.getExchangeRateInMilli() == 0)) {
+        && (request.getExchangeRate() == null
+            || toStandardRepresentation(request.getExchangeRate()).signum() == 0)) {
       apiErrors.add(
           ApiError.builder()
               .code("exchangeRateInMilli")

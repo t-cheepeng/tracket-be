@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
+
 public interface AccountRepository extends JpaRepository<Account, Integer> {
 
   @Modifying
@@ -20,6 +22,6 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
   void softDeleteById(@Param(value = "id") int id);
 
   @Modifying
-  @Query("Update Account a SET a.cashInCents=a.cashInCents + :amount WHERE a.id=:id")
-  void updateAmountById(@Param(value = "id") int id, @Param(value = "amount") int amount);
+  @Query("Update Account a SET a.cash=a.cash + :amount WHERE a.id=:id")
+  void updateAmountById(@Param(value = "id") int id, @Param(value = "amount") BigDecimal amount);
 }

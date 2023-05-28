@@ -1,19 +1,25 @@
 package com.tcheepeng.tracket.external.service;
 
 import com.tcheepeng.tracket.common.service.TimeOperator;
-import com.tcheepeng.tracket.external.model.SgxClosingPrice;
+import com.tcheepeng.tracket.external.api.model.AlpacaMarketResult;
+import com.tcheepeng.tracket.external.model.AlpacaMarketClosePrice;
+import com.tcheepeng.tracket.external.model.SgxClosePrice;
 import com.tcheepeng.tracket.external.model.SgxFetchPriceHistory;
 import com.tcheepeng.tracket.external.repository.SgxFetchPriceHistoryRepository;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class InformationProcessorService {
 
   private final SgxFetchPriceHistoryRepository sgxFetchPriceHistoryRepository;
@@ -26,7 +32,7 @@ public class InformationProcessorService {
     this.timeOperator = timeOperator;
   }
 
-  public List<SgxClosingPrice> processSgxClosingPriceData(
+  public List<SgxClosePrice> processSgxClosingPriceData(
       Pair<Integer, byte[]> sgxClosingPriceRawData) {
     Integer pathCode = sgxClosingPriceRawData.getFirst();
     byte[] rawData = sgxClosingPriceRawData.getSecond();
@@ -36,15 +42,16 @@ public class InformationProcessorService {
     sgxFetchPriceHistory.setFetchTs(timeOperator.getCurrentTimestamp());
     sgxFetchPriceHistory.setFileBlob(rawData);
     sgxFetchPriceHistory.setPathCode(pathCode);
-    List<SgxClosingPrice> closingPrices =
+    List<SgxClosePrice> closingPrices =
         Arrays.stream(stockRow)
             .map(
                 stock -> {
                   String[] stockData = stock.split(";");
+                  log.debug("Parsing SGX stock data: {}", (Object) stockData);
                   LocalDate date =
                       LocalDate.parse(stockData[0].trim(), DateTimeFormatter.ISO_LOCAL_DATE);
                   sgxFetchPriceHistory.setDateOfPathCode(Date.valueOf(date));
-                  return SgxClosingPrice.builder()
+                  return SgxClosePrice.builder()
                       .date(date)
                       .stockName(stockData[1].trim())
                       .remarks(stockData[2].trim())
@@ -66,5 +73,19 @@ public class InformationProcessorService {
             .toList();
     sgxFetchPriceHistoryRepository.save(sgxFetchPriceHistory);
     return closingPrices;
+  }
+
+  public List<AlpacaMarketClosePrice> processAlpacaMarketClosePriceData(
+      List<AlpacaMarketResult> rawResults) {
+    return rawResults.stream()
+        .map(
+            rawResult -> AlpacaMarketClosePrice.builder()
+                .tickerSymbol(rawResult.getTickerSymbol())
+                .indicativePriceTs(
+                    timeOperator.getTimestampFromMilliSinceEpoch(
+                        rawResult.getTimestamp().toInstant().toEpochMilli()))
+                .price(BigDecimal.valueOf(rawResult.getClose()))
+                .build())
+        .toList();
   }
 }

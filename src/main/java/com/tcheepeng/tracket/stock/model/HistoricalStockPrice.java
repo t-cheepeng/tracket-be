@@ -4,6 +4,7 @@ import com.tcheepeng.tracket.external.api.fetcher.ApiFetcher;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Objects;
 
@@ -21,8 +22,8 @@ public class HistoricalStockPrice {
   private Timestamp priceTs;
 
   @Basic
-  @Column(name = "price_in_cents")
-  private int priceInCents;
+  @Column(name = "price")
+  private BigDecimal price;
 
   @Basic
   @Column(name = "name")

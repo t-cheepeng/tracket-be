@@ -3,6 +3,7 @@ package com.tcheepeng.tracket.stock.controller.request;
 import com.tcheepeng.tracket.common.validation.ValidName;
 import com.tcheepeng.tracket.stock.model.TradeType;
 import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
@@ -23,14 +24,14 @@ public class TradeStockRequest {
   private Integer numOfUnits;
 
   @NotNull(message = "Price of stock cannot be empty")
-  private Integer pricePerUnitInMilli;
+  private String price;
 
   @ValidName private String name;
 
   @NotNull(message = "Trade must be belong to an account")
   private Integer accountId;
 
-  @Nullable private Integer feeInMilli;
+  @Nullable private String fee;
 
   @Nullable private Integer buyId;
 }

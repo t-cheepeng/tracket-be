@@ -2,7 +2,9 @@ package com.tcheepeng.tracket.scheduler;
 
 import com.tcheepeng.tracket.common.exceptions.TracketServiceException;
 import com.tcheepeng.tracket.common.service.TimeOperator;
-import com.tcheepeng.tracket.external.model.SgxClosingPrice;
+import com.tcheepeng.tracket.external.api.model.AlpacaMarketResult;
+import com.tcheepeng.tracket.external.model.AlpacaMarketClosePrice;
+import com.tcheepeng.tracket.external.model.SgxClosePrice;
 import com.tcheepeng.tracket.external.service.FetchService;
 import com.tcheepeng.tracket.external.service.InformationProcessorService;
 import com.tcheepeng.tracket.stock.service.StockHistoryService;
@@ -28,7 +30,6 @@ public class Scheduler {
   private final InformationProcessorService informationProcessorService;
   private final StockHistoryService stockHistoryService;
   private final TimeOperator timeOperator;
-  private int times = 0;
 
   Scheduler(
       final FetchService fetchService,
@@ -41,26 +42,26 @@ public class Scheduler {
     this.timeOperator = timeOperator;
   }
 
-  //  @Scheduled(fixedDelay = 2000)
-  //  public void fetchDailyHistoricalStockPrices() {
-  //    try {
-  //      if (times == 0) {
-  //        fetchService.fetchHistoricalStockPrices();
-  //        times++;
-  //      }
-  //
-  //    } catch (TracketServiceException e) {
-  //      Instant now = timeOperator.getCurrentInstant();
-  //      ZonedDateTime dateTime = now.atZone(ZoneId.of("Asia/Singapore"));
-  //      DateTimeFormatter dateTimeFormatter =
-  //          new DateTimeFormatterBuilder().appendPattern("u-MM-dd HH:mm:ss.SSS O").toFormatter();
-  //      String currentTs = dateTimeFormatter.format(dateTime);
-  //      String errorMsg = "Failed to fetch historical stock prices on: " + currentTs;
-  //      log.error(errorMsg, e);
-  //    }
-  //  }
+  @Scheduled(cron = "0 0 12 * * *", zone = "Asia/Singapore")
+  @Transactional
+  public void fetchDailyHistoricalStockPrices() {
+    try {
+      List<AlpacaMarketResult> results = fetchService.fetchHistoricalStockPrices();
+      List<AlpacaMarketClosePrice> processedData =
+          informationProcessorService.processAlpacaMarketClosePriceData(results);
+      stockHistoryService.storeAlpacaMarketClosingPrice(processedData);
+    } catch (TracketServiceException e) {
+      Instant now = timeOperator.getCurrentInstant();
+      ZonedDateTime dateTime = now.atZone(ZoneId.of("Asia/Singapore"));
+      DateTimeFormatter dateTimeFormatter =
+          new DateTimeFormatterBuilder().appendPattern("u-MM-dd HH:mm:ss.SSS O").toFormatter();
+      String currentTs = dateTimeFormatter.format(dateTime);
+      String errorMsg = "Failed to fetch historical stock prices on: " + currentTs;
+      log.error(errorMsg, e);
+    }
+  }
 
-  @Scheduled(fixedDelay = 10000)
+  @Scheduled(cron = "0 0 19 * * *", zone = "Asia/Singapore")
   @Transactional
   public void fetchSgxHistoricalStockPrices() {
     try {
@@ -73,7 +74,7 @@ public class Scheduler {
           .values()
           .forEach(
               rawDataPair -> {
-                List<SgxClosingPrice> sgxClosingPriceList =
+                List<SgxClosePrice> sgxClosingPriceList =
                     informationProcessorService.processSgxClosingPriceData(rawDataPair);
                 stockHistoryService.storeSgxStockClosingPrice(sgxClosingPriceList);
               });

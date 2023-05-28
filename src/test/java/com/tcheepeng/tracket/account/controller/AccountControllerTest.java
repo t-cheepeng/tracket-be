@@ -54,7 +54,7 @@ class AccountControllerTest {
         "currency": "SGD",
         "description": "string",
         "name": "string",
-        "cashInCents": 0
+        "cash": 0
         }
         """;
     String currencyRequest =
@@ -64,7 +64,7 @@ class AccountControllerTest {
         "currency": "",
         "description": "string",
         "name": "string",
-        "cashInCents": 0
+        "cash": 0
         }
         """;
     String emptyNameRequest =
@@ -73,7 +73,7 @@ class AccountControllerTest {
         "accountType": "INVESTMENT",
         "currency": "SGD",
         "name": "",
-        "cashInCents": 0
+        "cash": 0
         }
         """;
     String negativeCash =
@@ -82,7 +82,7 @@ class AccountControllerTest {
             "accountType": "INVESTMENT",
             "currency": "SGD",
             "name": "asd",
-            "cashInCents": -2
+            "cash": -2
             }
             """;
     String longCurrency =
@@ -91,7 +91,7 @@ class AccountControllerTest {
             "accountType": "INVESTMENT",
             "currency": "SGDDD",
             "name": "asd",
-            "cashInCents": 0
+            "cash": 0
             }
             """;
     String longName =
@@ -100,7 +100,7 @@ class AccountControllerTest {
             "accountType": "INVESTMENT",
             "currency": "SGD",
             "name": "asdINVESTMENTINVESTMENTINVESTMENTINVESTMENTasdINVESTMENTINVESTMENTINVESTMENTINVESTMENTasdINVESTMENTINVESTMENTINVESTMENTINVESTMENTasdINVESTMENTINVESTMENTINVESTMENTINVESTMENTasdINVESTMENTINVESTMENTINVESTMENTINVESTMENTasdINVESTMENTINVESTMENTINVESTMENTINVESTME",
-            "cashInCents": 0
+            "cash": 0
             }
             """;
     return Stream.of(
@@ -115,7 +115,7 @@ class AccountControllerTest {
             "{\"status\":\"FAIL\",\"errors\":[{\"code\":\"name\",\"message\":\"Account name cannot be empty\"}],\"data\":null}"),
         Arguments.of(
             negativeCash,
-            "{\"status\":\"FAIL\",\"errors\":[{\"code\":\"cashInCents\",\"message\":\"Cash cannot be negative\"}],\"data\":null}"),
+            "{\"status\":\"FAIL\",\"errors\":[{\"code\":\"cash\",\"message\":\"Initial cash cannot be negative\"}],\"data\":null}"),
         Arguments.of(
             longCurrency,
             "{\"status\":\"FAIL\",\"errors\":[{\"code\":\"currency\",\"message\":\"Currency cannot be more than 4 characters\"}],\"data\":null}"),
@@ -160,7 +160,7 @@ class AccountControllerTest {
             .andReturn();
     String jsonBody = result.getResponse().getContentAsString();
     String expectedJson =
-        "{\"status\":\"SUCCESS\",\"errors\":null,\"data\":{\"id\":1,\"accountType\":\"INVESTMENT\",\"currency\":\"SGD\",\"description\":\"Account description\",\"name\":\"Test Account\",\"cashInCents\":1000,\"assetValueInCents\":1000}}";
+        "{\"status\":\"SUCCESS\",\"errors\":null,\"data\":{\"id\":1,\"accountType\":\"INVESTMENT\",\"currency\":\"SGD\",\"description\":\"Account description\",\"name\":\"Test Account\",\"cash\":\"1.000000\",\"assetValue\":\"1.000000\"}}";
     assertEquals(expectedJson, jsonBody, JSONCompareMode.STRICT);
   }
 
@@ -235,7 +235,7 @@ class AccountControllerTest {
             .andReturn();
     String jsonBody = result.getResponse().getContentAsString();
     String expectedJson =
-        "{\"status\":\"SUCCESS\",\"errors\":null,\"data\":{\"accounts\":[{\"id\":1,\"accountType\":\"INVESTMENT\",\"currency\":\"SGD\",\"description\":\"Account description\",\"name\":\"Test Account\",\"cashInCents\":1000,\"assetValueInCents\":1000}]}}";
+        "{\"status\":\"SUCCESS\",\"errors\":null,\"data\":{\"accounts\":[{\"id\":1,\"accountType\":\"INVESTMENT\",\"currency\":\"SGD\",\"description\":\"Account description\",\"name\":\"Test Account\",\"cash\":\"1.000000\",\"assetValue\":\"1.000000\"}]}}";
     assertEquals(jsonBody, expectedJson, JSONCompareMode.STRICT);
   }
 
@@ -484,7 +484,7 @@ class AccountControllerTest {
   @Test
   void Transact_negative_amount_fails() throws Exception {
     AccountTransactionRequest request = TestHelper.getDepositRequest();
-    request.setAmountsInCents(-1000);
+    request.setAmount("-10.00");
     ObjectMapper mapper = new ObjectMapper();
 
     MvcResult result =
@@ -506,7 +506,7 @@ class AccountControllerTest {
   @Test
   void Transact_non_existent_account_fails() throws Exception {
     AccountTransactionRequest request = TestHelper.getDepositRequest();
-    request.setAmountsInCents(1000);
+    request.setAmount("10.00");
     ObjectMapper mapper = new ObjectMapper();
     doThrow(new DataIntegrityViolationException(BK_ACCOUNT_MUST_EXIST.name()))
         .when(service)
@@ -532,7 +532,7 @@ class AccountControllerTest {
   void Transfer_non_existent_exchange_rate_fails() throws Exception {
     AccountTransactionRequest request = TestHelper.getDepositRequest();
     request.setTransactionType(AccountTransactionType.TRANSFER);
-    request.setExchangeRateInMilli(null);
+    request.setExchangeRate(null);
     request.setAccountIdTo(1);
     ObjectMapper mapper = new ObjectMapper();
 
@@ -556,7 +556,7 @@ class AccountControllerTest {
   void Transfer_non_existent_account_id_fails() throws Exception {
     AccountTransactionRequest request = TestHelper.getDepositRequest();
     request.setTransactionType(AccountTransactionType.TRANSFER);
-    request.setExchangeRateInMilli(ONE_DOLLAR_IN_MILLICENTS);
+    request.setExchangeRate("1.00");
     request.setAccountIdTo(null);
     ObjectMapper mapper = new ObjectMapper();
 

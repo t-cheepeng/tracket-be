@@ -10,7 +10,7 @@ import java.util.List;
 public interface TickerApiRepository extends JpaRepository<TickerApi,Integer> {
 
     @Query(value = "select api from TickerApi api inner join Stock stock on api.name=stock.name")
-    List<TickerApi> findByStockIsNotDeleted();
+    List<TickerApi> findApiStock();
 
     List<TickerApi> findAllByApiEqualsAndStockIsDeletedFalse(ApiFetcher api);
 }

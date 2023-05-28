@@ -2,8 +2,9 @@ package com.tcheepeng.tracket.external.service;
 
 import com.tcheepeng.tracket.common.exceptions.TracketServiceException;
 import com.tcheepeng.tracket.external.api.ExternalApi;
-import com.tcheepeng.tracket.external.api.ExternalApiException;
-import com.tcheepeng.tracket.external.api.ExternalApiResponse;
+import com.tcheepeng.tracket.external.api.fetcher.ApiFetcher;
+import com.tcheepeng.tracket.external.api.model.AlpacaMarketResult;
+import com.tcheepeng.tracket.external.api.model.ExternalApiException;
 import com.tcheepeng.tracket.external.model.SgxFetchPriceHistory;
 import com.tcheepeng.tracket.external.repository.SgxFetchPriceHistoryRepository;
 import com.tcheepeng.tracket.stock.model.TickerApi;
@@ -13,7 +14,6 @@ import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
@@ -33,24 +33,25 @@ public class FetchService {
   }
 
   @Transactional
-  public void fetchHistoricalStockPrices() throws TracketServiceException {
+  public List<AlpacaMarketResult> fetchHistoricalStockPrices() throws TracketServiceException {
     try {
       List<TickerApi> tickerApis =
-          tickerApiRepository.findByStockIsNotDeleted().stream()
-              .filter(tickerAPi -> !tickerAPi.getStock().isDeleted())
+          tickerApiRepository.findApiStock().stream()
+              .filter(
+                  tickerApi ->
+                      !tickerApi.getStock().isDeleted()
+                          && tickerApi.getApi().equals(ApiFetcher.ALPACA_MARKET))
               .toList();
       log.info("{}", tickerApis);
 
-      List<ExternalApiResponse> externalApiResponse =
+      List<AlpacaMarketResult> externalApiResponse =
           tickerApis.stream()
               .map(
                   tickerApi ->
-                      ExternalApi.alpacaMarket()
-                          .daily()
-                          .withTicker(tickerApi.getTickerSymbol())
-                          .fetch())
+                      ExternalApi.alpacaMarket().withTicker(tickerApi.getTickerSymbol()).fetch())
               .toList();
       log.info("{}", externalApiResponse);
+      return externalApiResponse;
     } catch (ExternalApiException e) {
       throw new TracketServiceException(e);
     }
@@ -68,15 +69,19 @@ public class FetchService {
               LocalDate.now().atStartOfDay());
       long numOfDays = durationFromLastRun.toDays();
       Set<DayOfWeek> weekends = EnumSet.of(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY);
-      List<Pair<LocalDate, Integer>> datesToFetch =
-          Stream.iterate(1, num -> num <= numOfDays, f -> f + 1)
-              .map(
-                  dayAfter ->
-                      Pair.of(
-                          sgxFetchPriceHistory.getDateOfPathCode().toLocalDate().plusDays(dayAfter),
-                          dayAfter))
-              .filter(day -> !weekends.contains(day.getFirst().getDayOfWeek()))
-              .toList();
+
+      int dayAfter = 1;
+      List<Pair<LocalDate, Integer>> datesToFetch = new ArrayList<>((int) numOfDays);
+      for (int i = 1; i <= numOfDays; i++) {
+        LocalDate possibleFetchDate =
+            sgxFetchPriceHistory.getDateOfPathCode().toLocalDate().plusDays(i);
+        if (weekends.contains(possibleFetchDate.getDayOfWeek())) {
+          continue;
+        }
+
+        datesToFetch.add(Pair.of(possibleFetchDate, dayAfter));
+        dayAfter++;
+      }
       log.info("SGX historical dates to fetch: {}", datesToFetch);
       Map<LocalDate, Pair<Integer, byte[]>> result = new HashMap<>();
       datesToFetch.forEach(

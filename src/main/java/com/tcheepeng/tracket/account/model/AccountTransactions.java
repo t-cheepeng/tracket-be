@@ -3,6 +3,7 @@ package com.tcheepeng.tracket.account.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Objects;
 
@@ -28,8 +29,8 @@ public class AccountTransactions {
   private Integer accountIdTo;
 
   @Basic
-  @Column(name = "amount_in_cents")
-  private int amountInCents;
+  @Column(name = "amount")
+  private BigDecimal amount;
 
   @Basic
   @Column(name = "transaction_type")
@@ -37,6 +38,6 @@ public class AccountTransactions {
   private AccountTransactionType transactionType;
 
   @Basic
-  @Column(name = "exchange_rate_in_milli")
-  private int exchangeRateInMilli;
+  @Column(name = "exchange_rate")
+  private BigDecimal exchangeRate;
 }

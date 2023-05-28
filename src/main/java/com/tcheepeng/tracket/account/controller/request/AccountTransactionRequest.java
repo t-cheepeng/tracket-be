@@ -3,6 +3,7 @@ package com.tcheepeng.tracket.account.controller.request;
 import com.tcheepeng.tracket.account.model.AccountTransactionType;
 import com.tcheepeng.tracket.common.validation.ValidID;
 import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
 
@@ -11,7 +12,7 @@ import lombok.Data;
 public class AccountTransactionRequest {
   @ValidID private int accountIdFrom;
   @Nullable private Integer accountIdTo;
-  private int amountsInCents;
+  @NotNull(message = "Amount cannot be empty") private String amount;
   private AccountTransactionType transactionType;
-  @Nullable private Integer exchangeRateInMilli;
+  @Nullable private String exchangeRate;
 }

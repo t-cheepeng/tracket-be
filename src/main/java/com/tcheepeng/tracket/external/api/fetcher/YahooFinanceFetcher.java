@@ -2,9 +2,9 @@ package com.tcheepeng.tracket.external.api.fetcher;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tcheepeng.tracket.external.api.ExternalApiException;
-import com.tcheepeng.tracket.external.api.ExternalApiResponse;
-import com.tcheepeng.tracket.external.api.ExternalSearchResponse;
+import com.tcheepeng.tracket.external.api.model.ExternalApiException;
+import com.tcheepeng.tracket.external.api.model.ExternalApiResponse;
+import com.tcheepeng.tracket.external.api.model.ExternalSearchResponse;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;

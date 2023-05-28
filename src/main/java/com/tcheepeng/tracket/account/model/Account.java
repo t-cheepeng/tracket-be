@@ -1,6 +1,8 @@
 package com.tcheepeng.tracket.account.model;
 
 import jakarta.persistence.*;
+
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import lombok.Data;
 
@@ -35,8 +37,8 @@ public class Account {
   private String description;
 
   @Basic
-  @Column(name = "cash_in_cents")
-  private int cashInCents;
+  @Column(name = "cash")
+  private BigDecimal cash;
 
   @Basic
   @Column(name = "is_deleted")

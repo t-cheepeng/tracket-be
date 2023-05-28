@@ -1,19 +1,19 @@
 create table tracket.account
 (
-    id            serial
+    id           serial
         constraint pk_account
             primary key,
-    name          varchar(255)            not null,
-    currency      char(4)                 not null
+    name         varchar(255)                 not null,
+    currency     char(4)                      not null
         constraint fk_currency
             references tracket.currency,
-    creation_ts   timestamp default CURRENT_TIMESTAMP,
-    account_type  varchar(255)            not null
+    creation_ts  timestamp      default CURRENT_TIMESTAMP,
+    account_type varchar(255)                 not null
         constraint fk_account_type
             references tracket.code_lookup (lookup_value),
-    description   text,
-    cash_in_cents integer   default 0     not null,
-    is_deleted    boolean   default false not null
+    description  text,
+    cash         numeric(13, 6) default 0     not null,
+    is_deleted   boolean        default false not null
 );
 
 comment on table tracket.account is 'Accounts';
@@ -30,7 +30,7 @@ comment on column tracket.account.account_type is 'Account type. Investment, Spe
 
 comment on column tracket.account.description is 'Short description of account';
 
-comment on column tracket.account.cash_in_cents is 'Cash held in account (in cents)';
+comment on column tracket.account.cash is 'Cash held in account. Standard Decimal representation';
 
 comment on column tracket.account.is_deleted is 'Flag for account soft deletion';
 

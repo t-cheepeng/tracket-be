@@ -1,6 +1,6 @@
 package com.tcheepeng.tracket.account.service;
 
-import static com.tcheepeng.tracket.common.Constants.ONE_DOLLAR_IN_MILLICENTS;
+import static com.tcheepeng.tracket.common.Utils.toStandardRepresentation;
 import static com.tcheepeng.tracket.common.validation.BusinessValidations.BK_ACCOUNT_MUST_EXIST;
 
 import com.tcheepeng.tracket.account.controller.request.AccountTransactionRequest;
@@ -10,6 +10,7 @@ import com.tcheepeng.tracket.account.controller.response.AccountResponse;
 import com.tcheepeng.tracket.account.model.Account;
 import com.tcheepeng.tracket.account.model.AccountTransactionType;
 import com.tcheepeng.tracket.account.model.AccountTransactions;
+import com.tcheepeng.tracket.account.model.StockOwned;
 import com.tcheepeng.tracket.account.repository.AccountRepository;
 import com.tcheepeng.tracket.account.repository.AccountTransactionsRepository;
 import com.tcheepeng.tracket.common.service.TimeOperator;
@@ -17,13 +18,16 @@ import com.tcheepeng.tracket.stock.model.Trade;
 import com.tcheepeng.tracket.stock.model.TradeType;
 import com.tcheepeng.tracket.stock.repository.TradeRepository;
 import jakarta.transaction.Transactional;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class AccountService {
 
   private final AccountRepository accountRepository;
@@ -54,16 +58,16 @@ public class AccountService {
     }
 
     List<Trade> trades = tradeRepository.findByAccount(acc.getId());
-    int assetValues = sumAllTrades(trades);
+    BigDecimal assetValues = sumAllTrades(trades);
     return Optional.of(
         AccountResponse.builder()
             .id(acc.getId())
             .name(acc.getName())
             .accountType(acc.getAccountType())
-            .cashInCents(acc.getCashInCents())
+            .cash(acc.getCash().toPlainString())
             .description(acc.getDescription())
             .currency(acc.getCurrency())
-            .assetValueInCents(assetValues)
+            .assetValue(assetValues.toPlainString())
             .build());
   }
 
@@ -75,7 +79,8 @@ public class AccountService {
     newAccount.setName(request.getName());
     newAccount.setCurrency(request.getCurrency());
     newAccount.setDescription(request.getDescription());
-    newAccount.setCashInCents(request.getCashInCents());
+    newAccount.setCash(
+        request.getCash() == null ? null : toStandardRepresentation(request.getCash()));
     newAccount.setDeleted(false);
 
     accountRepository.save(newAccount);
@@ -102,12 +107,23 @@ public class AccountService {
                       .id(account.getId())
                       .name(account.getName())
                       .accountType(account.getAccountType())
-                      .cashInCents(account.getCashInCents())
+                      .cash(account.getCash().toPlainString())
                       .description(account.getDescription())
                       .currency(account.getCurrency());
-              List<Trade> tradesByAccount = tradeRepository.findByAccount(account.getId());
-              int assetValue = sumAllTrades(tradesByAccount);
-              return accountBuilder.assetValueInCents(assetValue).build();
+              List<StockOwned> stockOwnedByAccount =
+                  tradeRepository.findAllStockOwnedByAccount(account.getId());
+              stockOwnedByAccount.forEach(
+                  stockOwned ->
+                      log.info(
+                          "[{}, {}, {}, {}, {}, {}]",
+                          stockOwned.getStockName(),
+                          stockOwned.getCurrency(),
+                          stockOwned.getAssetClass(),
+                          stockOwned.getCostBasis(),
+                          stockOwned.getNumOfUnitsHeld(),
+                          stockOwned.getTotalFee()));
+              log.info("Found all stocks owned by account {}: {}", account, stockOwnedByAccount);
+              return accountBuilder.build();
             })
         .toList();
   }
@@ -127,21 +143,25 @@ public class AccountService {
 
   private void handleDepositAccount(AccountTransactionRequest request) {
     getTransactionFromRequest(request);
-    accountRepository.updateAmountById(request.getAccountIdFrom(), request.getAmountsInCents());
+    accountRepository.updateAmountById(
+        request.getAccountIdFrom(), toStandardRepresentation(request.getAmount()));
   }
 
   private void handleWithdrawAccount(AccountTransactionRequest request) {
     getTransactionFromRequest(request);
-    accountRepository.updateAmountById(request.getAccountIdFrom(), -request.getAmountsInCents());
+    accountRepository.updateAmountById(
+        request.getAccountIdFrom(), toStandardRepresentation("-" + request.getAmount()));
   }
 
   private void handleTransferAccount(AccountTransactionRequest request) {
-    Objects.requireNonNull(request.getExchangeRateInMilli());
+    Objects.requireNonNull(request.getExchangeRate());
     Objects.requireNonNull(request.getAccountIdTo());
     getTransactionFromRequest(request);
-    accountRepository.updateAmountById(request.getAccountIdFrom(), -request.getAmountsInCents());
-    int currencyAfterTransfer =
-        request.getAmountsInCents() * request.getExchangeRateInMilli() / ONE_DOLLAR_IN_MILLICENTS;
+    accountRepository.updateAmountById(
+        request.getAccountIdFrom(), toStandardRepresentation("-" + request.getAmount()));
+    BigDecimal amount = toStandardRepresentation(request.getAmount());
+    BigDecimal exchangeRate = toStandardRepresentation(request.getExchangeRate());
+    BigDecimal currencyAfterTransfer = amount.multiply(exchangeRate);
     accountRepository.updateAmountById(request.getAccountIdTo(), currencyAfterTransfer);
   }
 
@@ -151,11 +171,11 @@ public class AccountService {
     transaction.setAccountIdTo(request.getAccountIdTo());
     transaction.setTransactionTs(timeOperator.getCurrentTimestamp());
     transaction.setTransactionType(request.getTransactionType());
-    transaction.setAmountInCents(request.getAmountsInCents());
-    transaction.setExchangeRateInMilli(
-        request.getExchangeRateInMilli() == null
-            ? ONE_DOLLAR_IN_MILLICENTS
-            : request.getExchangeRateInMilli());
+    transaction.setAmount(toStandardRepresentation(request.getAmount()));
+    transaction.setExchangeRate(
+        request.getExchangeRate() == null
+            ? BigDecimal.ONE
+            : toStandardRepresentation(request.getExchangeRate()));
 
     transactionsRepository.save(transaction);
   }
@@ -185,12 +205,18 @@ public class AccountService {
     }
   }
 
-  private int sumAllTrades(List<Trade> trades) {
+  private BigDecimal sumAllTrades(List<Trade> trades) {
     return trades.stream()
         .map(
             trade ->
-                (trade.getNumOfUnits() * trade.getPricePerUnit() - trade.getFee())
-                    * (trade.getTradeType() == TradeType.SELL ? -1 : 1))
-        .reduce(0, (Integer::sum));
+                (trade
+                        .getPricePerUnit()
+                        .multiply(new BigDecimal(trade.getNumOfUnits()))
+                        .subtract(trade.getFee()))
+                    .multiply(
+                        trade.getTradeType() == TradeType.SELL
+                            ? BigDecimal.ONE.negate()
+                            : BigDecimal.ONE))
+        .reduce(BigDecimal.ZERO, (BigDecimal::add));
   }
 }

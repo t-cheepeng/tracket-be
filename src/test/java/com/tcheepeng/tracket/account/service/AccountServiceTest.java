@@ -1,6 +1,6 @@
 package com.tcheepeng.tracket.account.service;
 
-import static com.tcheepeng.tracket.common.Constants.ONE_DOLLAR_IN_MILLICENTS;
+import static com.tcheepeng.tracket.common.Utils.toStandardRepresentation;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -15,6 +15,7 @@ import com.tcheepeng.tracket.account.repository.AccountTransactionsRepository;
 import com.tcheepeng.tracket.common.TestHelper;
 import com.tcheepeng.tracket.common.service.TimeOperator;
 import com.tcheepeng.tracket.stock.repository.TradeRepository;
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Optional;
@@ -46,16 +47,17 @@ public class AccountServiceTest {
     when(tradeRepository.findByAccount(1)).thenReturn(TestHelper.getAllTradesForTestAccount());
 
     Optional<AccountResponse> account = accountService.getAccount(1);
-    AccountResponse expected =
-        AccountResponse.builder()
-            .id(1)
-            .name("Test Account")
-            .currency("SGD")
-            .accountType(AccountType.INVESTMENT)
-            .description("Account description")
-            .cashInCents(1000)
-            .assetValueInCents(1000)
-            .build();
+    Optional<AccountResponse> expected =
+        Optional.of(
+            AccountResponse.builder()
+                .id(1)
+                .name("Test Account")
+                .currency("SGD")
+                .accountType(AccountType.INVESTMENT)
+                .description("Account description")
+                .cash("1.000000")
+                .assetValue("42.730000")
+                .build());
     assertThat(account).isNotEmpty().isEqualTo(expected);
   }
 
@@ -135,12 +137,12 @@ public class AccountServiceTest {
     expectedTransaction.setTransactionTs(Timestamp.from(Instant.ofEpochMilli(1000)));
     expectedTransaction.setAccountIdTo(null);
     expectedTransaction.setAccountIdFrom(0);
-    expectedTransaction.setAmountInCents(1000);
+    expectedTransaction.setAmount(toStandardRepresentation("10.00"));
     expectedTransaction.setTransactionType(AccountTransactionType.DEPOSIT);
-    expectedTransaction.setExchangeRateInMilli(ONE_DOLLAR_IN_MILLICENTS);
+    expectedTransaction.setExchangeRate(BigDecimal.ONE);
 
     assertThat(transactionCaptor.getValue()).isEqualTo(expectedTransaction);
-    verify(accountRepository).updateAmountById(0, 1000);
+    verify(accountRepository).updateAmountById(0, toStandardRepresentation("10.00"));
   }
 
   @Test
@@ -159,12 +161,12 @@ public class AccountServiceTest {
     expectedTransaction.setTransactionTs(Timestamp.from(Instant.ofEpochMilli(1000)));
     expectedTransaction.setAccountIdTo(null);
     expectedTransaction.setAccountIdFrom(0);
-    expectedTransaction.setAmountInCents(1000);
+    expectedTransaction.setAmount(toStandardRepresentation("10.00"));
     expectedTransaction.setTransactionType(AccountTransactionType.WITHDRAW);
-    expectedTransaction.setExchangeRateInMilli(ONE_DOLLAR_IN_MILLICENTS);
+    expectedTransaction.setExchangeRate(BigDecimal.ONE);
 
     assertThat(transactionCaptor.getValue()).isEqualTo(expectedTransaction);
-    verify(accountRepository).updateAmountById(0, -1000);
+    verify(accountRepository).updateAmountById(0, toStandardRepresentation("-10.00"));
   }
 
   @Test
@@ -199,12 +201,12 @@ public class AccountServiceTest {
     expectedTransaction.setTransactionTs(Timestamp.from(Instant.ofEpochMilli(1000)));
     expectedTransaction.setAccountIdTo(1);
     expectedTransaction.setAccountIdFrom(0);
-    expectedTransaction.setAmountInCents(254);
-    expectedTransaction.setExchangeRateInMilli(74560);
+    expectedTransaction.setAmount(toStandardRepresentation("2.54"));
+    expectedTransaction.setExchangeRate(toStandardRepresentation("7.4560"));
     expectedTransaction.setTransactionType(AccountTransactionType.TRANSFER);
 
     assertThat(transactionCaptor.getValue()).isEqualTo(expectedTransaction);
-    verify(accountRepository).updateAmountById(0, -254);
-    verify(accountRepository).updateAmountById(1, 189);
+    verify(accountRepository).updateAmountById(0, toStandardRepresentation("-2.540000"));
+    verify(accountRepository).updateAmountById(1, new BigDecimal("18.938240000000"));
   }
 }

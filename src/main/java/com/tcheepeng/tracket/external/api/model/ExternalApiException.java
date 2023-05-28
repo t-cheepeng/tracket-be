@@ -1,4 +1,4 @@
-package com.tcheepeng.tracket.external.api;
+package com.tcheepeng.tracket.external.api.model;
 
 public class ExternalApiException extends RuntimeException {
 

@@ -10,8 +10,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.tcheepeng.tracket.common.TestHelper;
 import com.tcheepeng.tracket.common.validation.BusinessValidations;
+import com.tcheepeng.tracket.external.api.fetcher.ApiFetcher;
 import com.tcheepeng.tracket.integration.common.TestWebSecurityConfiguration;
-import com.tcheepeng.tracket.external.api.ExternalSearchResponse;
+import com.tcheepeng.tracket.external.api.model.ExternalSearchResponse;
 import com.tcheepeng.tracket.stock.controller.request.CreateStockRequest;
 import com.tcheepeng.tracket.stock.controller.request.PatchStockRequest;
 import com.tcheepeng.tracket.stock.controller.request.TradeStockRequest;
@@ -131,7 +132,7 @@ public class StockControllerTest {
                 ExternalSearchResponse.builder()
                     .stockName("ABC")
                     .stockClass("ETF")
-                    .apiUsed(ApiStrategy.YAHOO_FINANCE)
+                    .apiUsed(ApiFetcher.YAHOO_FINANCE)
                     .exchange("SES")
                     .exchangeCountry("Singapore")
                     .ticker("A35.SI")

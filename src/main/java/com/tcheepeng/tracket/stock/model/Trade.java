@@ -2,6 +2,8 @@ package com.tcheepeng.tracket.stock.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 @Data
@@ -28,7 +30,7 @@ public class Trade {
 
     @Basic
     @Column(name = "price_per_unit")
-    private int pricePerUnit;
+    private BigDecimal pricePerUnit;
 
     @Basic
     @Column(name = "name")
@@ -40,7 +42,7 @@ public class Trade {
 
     @Basic
     @Column(name = "fee")
-    private int fee;
+    private BigDecimal fee;
 
     @Basic
     @Column(name = "buy_id")

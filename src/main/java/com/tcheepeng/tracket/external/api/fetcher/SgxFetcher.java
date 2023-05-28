@@ -1,6 +1,6 @@
 package com.tcheepeng.tracket.external.api.fetcher;
 
-import com.tcheepeng.tracket.external.api.ExternalApiException;
+import com.tcheepeng.tracket.external.api.model.ExternalApiException;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;

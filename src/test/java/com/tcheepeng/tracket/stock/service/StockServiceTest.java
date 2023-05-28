@@ -1,5 +1,6 @@
 package com.tcheepeng.tracket.stock.service;
 
+import static com.tcheepeng.tracket.common.Utils.toStandardRepresentation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.*;
@@ -9,6 +10,7 @@ import com.tcheepeng.tracket.account.repository.AccountRepository;
 import com.tcheepeng.tracket.common.TestHelper;
 import com.tcheepeng.tracket.common.service.TimeOperator;
 import com.tcheepeng.tracket.common.validation.BusinessValidations;
+import com.tcheepeng.tracket.external.api.fetcher.ApiFetcher;
 import com.tcheepeng.tracket.stock.controller.request.CreateStockRequest;
 import com.tcheepeng.tracket.stock.controller.request.PatchStockRequest;
 import com.tcheepeng.tracket.stock.controller.request.TradeStockRequest;
@@ -17,6 +19,8 @@ import com.tcheepeng.tracket.stock.repository.StockRepository;
 import com.tcheepeng.tracket.stock.repository.TickerApiRepository;
 import com.tcheepeng.tracket.stock.repository.TradeRepository;
 import jakarta.persistence.EntityNotFoundException;
+
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Currency;
@@ -75,7 +79,7 @@ public class StockServiceTest {
             .assetClass(AssetClass.BOND)
             .currency("SGD")
             .displayTickerSymbol("Display")
-            .apiTickers(Map.of(ApiStrategy.YAHOO_FINANCE, "ABC.SI", ApiStrategy.RAW_URL, "ABC"))
+            .apiTickers(Map.of(ApiFetcher.YAHOO_FINANCE, "ABC.SI", ApiFetcher.ALPACA_MARKET, "ABC"))
             .build();
 
     stockService.createStock(request);
@@ -91,14 +95,14 @@ public class StockServiceTest {
 
     verify(tickerApiRepository).saveAll(tickerApiCaptor.capture());
     TickerApi expectedYahooApi = new TickerApi();
-    expectedYahooApi.setApi(ApiStrategy.YAHOO_FINANCE);
+    expectedYahooApi.setApi(ApiFetcher.YAHOO_FINANCE);
     expectedYahooApi.setTickerSymbol("ABC.SI");
     expectedYahooApi.setName("ABC");
-    TickerApi rawApi = new TickerApi();
-    rawApi.setApi(ApiStrategy.RAW_URL);
-    rawApi.setTickerSymbol("ABC");
-    rawApi.setName("ABC");
-    assertThat(tickerApiCaptor.getValue()).containsExactlyInAnyOrder(expectedYahooApi, rawApi);
+    TickerApi alpacaMarket = new TickerApi();
+    alpacaMarket.setApi(ApiFetcher.ALPACA_MARKET);
+    alpacaMarket.setTickerSymbol("ABC");
+    alpacaMarket.setName("ABC");
+    assertThat(tickerApiCaptor.getValue()).containsExactlyInAnyOrder(expectedYahooApi, alpacaMarket);
   }
 
   @Test
@@ -298,10 +302,10 @@ public class StockServiceTest {
             .timestamp(1L)
             .tradeType(TradeType.BUY)
             .numOfUnits(10)
-            .pricePerUnitInMilli(1000)
+            .price("10.00")
             .name("ABC")
             .accountId(0)
-            .feeInMilli(1000)
+            .fee("1.00")
             .buyId(0)
             .build();
     Stock stock = TestHelper.getTestStock();
@@ -320,10 +324,10 @@ public class StockServiceTest {
     expectedTrade.setTradeTs(timestamp);
     expectedTrade.setTradeType(TradeType.BUY);
     expectedTrade.setNumOfUnits(10);
-    expectedTrade.setPricePerUnit(1000);
+    expectedTrade.setPricePerUnit(toStandardRepresentation("10.00"));
     expectedTrade.setName("ABC");
     expectedTrade.setAccount(0);
-    expectedTrade.setFee(1000);
+    expectedTrade.setFee(toStandardRepresentation("1.00"));
     expectedTrade.setBuyId(null);
     ArgumentCaptor<Trade> argumentCaptor = ArgumentCaptor.forClass(Trade.class);
     verify(tradeRepository).save(argumentCaptor.capture());
@@ -338,10 +342,10 @@ public class StockServiceTest {
                     .timestamp(1L)
                     .tradeType(TradeType.DIVIDEND)
                     .numOfUnits(10)
-                    .pricePerUnitInMilli(1000)
+                    .price("10.00")
                     .name("ABC")
                     .accountId(0)
-                    .feeInMilli(0)
+                    .fee("0")
                     .build();
     Stock stock = TestHelper.getTestStock();
     stock.setCurrency("SGD");
@@ -359,10 +363,10 @@ public class StockServiceTest {
     expectedTrade.setTradeTs(timestamp);
     expectedTrade.setTradeType(TradeType.DIVIDEND);
     expectedTrade.setNumOfUnits(10);
-    expectedTrade.setPricePerUnit(1000);
+    expectedTrade.setPricePerUnit(toStandardRepresentation("10.00"));
     expectedTrade.setName("ABC");
     expectedTrade.setAccount(0);
-    expectedTrade.setFee(0);
+    expectedTrade.setFee(toStandardRepresentation("0.000000"));
     expectedTrade.setBuyId(null);
     ArgumentCaptor<Trade> argumentCaptor = ArgumentCaptor.forClass(Trade.class);
     verify(tradeRepository).save(argumentCaptor.capture());
@@ -377,10 +381,10 @@ public class StockServiceTest {
                     .timestamp(1L)
                     .tradeType(TradeType.SELL)
                     .numOfUnits(10)
-                    .pricePerUnitInMilli(1000)
+                    .price("10.00")
                     .name("ABC")
                     .accountId(0)
-                    .feeInMilli(0)
+                    .fee("0")
                     .buyId(0)
                     .build();
     Stock stock = TestHelper.getTestStock();
@@ -404,10 +408,10 @@ public class StockServiceTest {
     expectedTrade.setTradeTs(timestamp);
     expectedTrade.setTradeType(TradeType.SELL);
     expectedTrade.setNumOfUnits(10);
-    expectedTrade.setPricePerUnit(1000);
+    expectedTrade.setPricePerUnit(toStandardRepresentation("10.00"));
     expectedTrade.setName("ABC");
     expectedTrade.setAccount(0);
-    expectedTrade.setFee(0);
+    expectedTrade.setFee(toStandardRepresentation("0.000000"));
     expectedTrade.setBuyId(0);
     ArgumentCaptor<Trade> argumentCaptor = ArgumentCaptor.forClass(Trade.class);
     verify(tradeRepository).save(argumentCaptor.capture());

@@ -1,4 +1,4 @@
-package com.tcheepeng.tracket.external.api;
+package com.tcheepeng.tracket.external.api.model;
 
 import java.time.Instant;
 import java.util.Currency;

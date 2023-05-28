@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class SgxClosingPrice {
+public class SgxClosePrice {
   private LocalDate date;
   private String stockName;
   private String remarks;
