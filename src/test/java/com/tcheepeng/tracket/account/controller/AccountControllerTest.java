@@ -1,6 +1,5 @@
 package com.tcheepeng.tracket.account.controller;
 
-import static com.tcheepeng.tracket.common.Constants.ONE_DOLLAR_IN_MILLICENTS;
 import static com.tcheepeng.tracket.common.TestHelper.assertInternalServerError;
 import static com.tcheepeng.tracket.common.validation.BusinessValidations.BK_ACCOUNT_MUST_EXIST;
 import static org.mockito.Mockito.*;
@@ -13,7 +12,6 @@ import com.tcheepeng.tracket.account.controller.request.AccountTransactionReques
 import com.tcheepeng.tracket.account.controller.request.CreateAccountRequest;
 import com.tcheepeng.tracket.account.controller.request.PatchAccountRequest;
 import com.tcheepeng.tracket.account.controller.response.AccountResponse;
-import com.tcheepeng.tracket.account.model.Account;
 import com.tcheepeng.tracket.account.model.AccountTransactionType;
 import com.tcheepeng.tracket.account.service.AccountService;
 import com.tcheepeng.tracket.common.TestHelper;

@@ -19,8 +19,6 @@ import com.tcheepeng.tracket.stock.repository.StockRepository;
 import com.tcheepeng.tracket.stock.repository.TickerApiRepository;
 import com.tcheepeng.tracket.stock.repository.TradeRepository;
 import jakarta.persistence.EntityNotFoundException;
-
-import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Currency;
@@ -102,7 +100,8 @@ public class StockServiceTest {
     alpacaMarket.setApi(ApiFetcher.ALPACA_MARKET);
     alpacaMarket.setTickerSymbol("ABC");
     alpacaMarket.setName("ABC");
-    assertThat(tickerApiCaptor.getValue()).containsExactlyInAnyOrder(expectedYahooApi, alpacaMarket);
+    assertThat(tickerApiCaptor.getValue())
+        .containsExactlyInAnyOrder(expectedYahooApi, alpacaMarket);
   }
 
   @Test
@@ -338,15 +337,15 @@ public class StockServiceTest {
   @Test
   void Trade_stock_dividend_trade_is_successful() {
     TradeStockRequest request =
-            TradeStockRequest.builder()
-                    .timestamp(1L)
-                    .tradeType(TradeType.DIVIDEND)
-                    .numOfUnits(10)
-                    .price("10.00")
-                    .name("ABC")
-                    .accountId(0)
-                    .fee("0")
-                    .build();
+        TradeStockRequest.builder()
+            .timestamp(1L)
+            .tradeType(TradeType.DIVIDEND)
+            .numOfUnits(10)
+            .price("10.00")
+            .name("ABC")
+            .accountId(0)
+            .fee("0")
+            .build();
     Stock stock = TestHelper.getTestStock();
     stock.setCurrency("SGD");
     stock.setDeleted(false);
@@ -377,16 +376,16 @@ public class StockServiceTest {
   @Test
   void Trade_stock_sell_trade_is_successful() {
     TradeStockRequest request =
-            TradeStockRequest.builder()
-                    .timestamp(1L)
-                    .tradeType(TradeType.SELL)
-                    .numOfUnits(10)
-                    .price("10.00")
-                    .name("ABC")
-                    .accountId(0)
-                    .fee("0")
-                    .buyId(0)
-                    .build();
+        TradeStockRequest.builder()
+            .timestamp(1L)
+            .tradeType(TradeType.SELL)
+            .numOfUnits(10)
+            .price("10.00")
+            .name("ABC")
+            .accountId(0)
+            .fee("0")
+            .buyId(0)
+            .build();
     Stock stock = TestHelper.getTestStock();
     stock.setCurrency("SGD");
     stock.setDeleted(false);
@@ -419,7 +418,7 @@ public class StockServiceTest {
   }
 
   @Test
-  void Get_all_stocks_no_deleted_returned() throws Exception {
+  void Get_all_stocks_no_deleted_returned() {
     Stock testStock1 = TestHelper.getTestStock();
     Stock deletedStock = TestHelper.getTestStock();
     deletedStock.setDeleted(true);

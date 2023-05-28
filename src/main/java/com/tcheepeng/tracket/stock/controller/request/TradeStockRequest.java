@@ -3,7 +3,6 @@ package com.tcheepeng.tracket.stock.controller.request;
 import com.tcheepeng.tracket.common.validation.ValidName;
 import com.tcheepeng.tracket.stock.model.TradeType;
 import jakarta.annotation.Nullable;
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;

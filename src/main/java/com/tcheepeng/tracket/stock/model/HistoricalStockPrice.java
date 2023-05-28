@@ -2,11 +2,9 @@ package com.tcheepeng.tracket.stock.model;
 
 import com.tcheepeng.tracket.external.api.fetcher.ApiFetcher;
 import jakarta.persistence.*;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.util.Objects;
+import lombok.Data;
 
 @Data
 @Entity

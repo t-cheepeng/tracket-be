@@ -1,11 +1,9 @@
 package com.tcheepeng.tracket.account.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.util.Objects;
+import lombok.Data;
 
 @Data
 @Entity
@@ -34,7 +32,7 @@ public class AccountTransactions {
 
   @Basic
   @Column(name = "transaction_type")
-  @Enumerated(value=EnumType.STRING)
+  @Enumerated(value = EnumType.STRING)
   private AccountTransactionType transactionType;
 
   @Basic
