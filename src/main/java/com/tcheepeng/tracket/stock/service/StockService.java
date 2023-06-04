@@ -1,5 +1,7 @@
 package com.tcheepeng.tracket.stock.service;
 
+import static com.tcheepeng.tracket.common.Utils.toStandardRepresentation;
+
 import com.tcheepeng.tracket.account.model.Account;
 import com.tcheepeng.tracket.account.repository.AccountRepository;
 import com.tcheepeng.tracket.common.service.TimeOperator;
@@ -7,6 +9,8 @@ import com.tcheepeng.tracket.common.validation.BusinessValidations;
 import com.tcheepeng.tracket.external.api.*;
 import com.tcheepeng.tracket.external.api.fetcher.ApiFetcher;
 import com.tcheepeng.tracket.external.api.model.ExternalSearchResponse;
+import com.tcheepeng.tracket.external.service.FetchService;
+import com.tcheepeng.tracket.external.service.InformationProcessorService;
 import com.tcheepeng.tracket.stock.controller.request.CreateStockRequest;
 import com.tcheepeng.tracket.stock.controller.request.PatchStockRequest;
 import com.tcheepeng.tracket.stock.controller.request.TradeStockRequest;
@@ -16,20 +20,22 @@ import com.tcheepeng.tracket.stock.repository.TickerApiRepository;
 import com.tcheepeng.tracket.stock.repository.TradeRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
-
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
-import static com.tcheepeng.tracket.common.Utils.toStandardRepresentation;
-
 @Service
 @Slf4j
 public class StockService {
+
+  private final FetchService fetchService;
+  private final InformationProcessorService processorService;
 
   private final StockRepository stockRepository;
   private final TickerApiRepository tickerApiRepository;
@@ -38,11 +44,15 @@ public class StockService {
   private final TimeOperator timeOperator;
 
   public StockService(
+      final FetchService fetchService,
+      final InformationProcessorService processorService,
       final StockRepository stockRepository,
       final TickerApiRepository tickerApiRepository,
       final TradeRepository tradeRepository,
       final AccountRepository accountRepository,
       final TimeOperator timeOperator) {
+    this.fetchService = fetchService;
+    this.processorService = processorService;
     this.stockRepository = stockRepository;
     this.tickerApiRepository = tickerApiRepository;
     this.tradeRepository = tradeRepository;
@@ -51,7 +61,16 @@ public class StockService {
   }
 
   public List<ExternalSearchResponse> queryExternalStockApi(String query) {
-    return ExternalApi.yahooFinance().search(query);
+    List<ExternalSearchResponse> yahooFinanceQueryResponse =
+        ExternalApi.yahooFinance().search(query);
+    List<ExternalSearchResponse> alpacaMarketQueryResponse =
+        ExternalApi.alpacaMarket().search(query);
+    List<ExternalSearchResponse> sgxMarketQueryResponse =
+        ExternalApi.sgx().search(fetchService, processorService, query);
+
+    return Stream.of(yahooFinanceQueryResponse, alpacaMarketQueryResponse, sgxMarketQueryResponse)
+        .flatMap(Collection::stream)
+        .toList();
   }
 
   public Optional<Stock> getStock(String stockName) {
@@ -127,7 +146,8 @@ public class StockService {
     trade.setPricePerUnit(toStandardRepresentation(request.getPrice()));
     trade.setName(request.getName());
     trade.setAccount(request.getAccountId());
-    trade.setFee(request.getFee() == null ? BigDecimal.ZERO : toStandardRepresentation(request.getFee()));
+    trade.setFee(
+        request.getFee() == null ? BigDecimal.ZERO : toStandardRepresentation(request.getFee()));
     trade.setBuyId(
         request.getTradeType() == TradeType.BUY || request.getTradeType() == TradeType.DIVIDEND
             ? null

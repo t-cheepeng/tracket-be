@@ -139,7 +139,7 @@ public class YahooFinanceFetcher {
 
         builder = builder.currencyGuess(guessCurrency(quote));
 
-        result.add(builder.build());
+        result.add(builder.apiUsed(ApiFetcher.YAHOO_FINANCE).build());
       }
 
       return result;

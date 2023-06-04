@@ -1,12 +1,13 @@
 package com.tcheepeng.tracket.group.service;
 
-import com.tcheepeng.tracket.group.controller.request.CreateAccountAccountGroupRequest;
+import com.tcheepeng.tracket.group.controller.request.AccountAccountGroupRequest;
 import com.tcheepeng.tracket.group.controller.request.CreateAccountGroupRequest;
 import com.tcheepeng.tracket.group.model.AccountAccountGroup;
 import com.tcheepeng.tracket.group.model.AccountGroup;
 import com.tcheepeng.tracket.group.repository.AccountAccountGroupRepository;
 import com.tcheepeng.tracket.group.repository.AccountGroupRepository;
 import com.tcheepeng.tracket.group.service.dto.GroupMapping;
+import jakarta.transaction.Transactional;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +24,7 @@ public class AccountGroupService {
     this.accountAccountGroupRepository = accountAccountGroupRepository;
   }
 
+  @Transactional
   public void createAccountGroup(CreateAccountGroupRequest request) {
     AccountGroup group = new AccountGroup();
     group.setName(request.getName());
@@ -30,7 +32,8 @@ public class AccountGroupService {
     accountGroupRepository.save(group);
   }
 
-  public void groupAccount(CreateAccountAccountGroupRequest request) {
+  @Transactional
+  public void groupAccount(AccountAccountGroupRequest request) {
     AccountAccountGroup.EmbeddedAccountAccountGroup group =
         new AccountAccountGroup.EmbeddedAccountAccountGroup();
     group.setAccountId(request.getAccountId());
@@ -38,6 +41,17 @@ public class AccountGroupService {
     AccountAccountGroup groupEntity = new AccountAccountGroup();
     groupEntity.setAccountAccountGroup(group);
     accountAccountGroupRepository.save(groupEntity);
+  }
+
+  @Transactional
+  public void ungroupAccount(AccountAccountGroupRequest request) {
+    AccountAccountGroup.EmbeddedAccountAccountGroup group =
+        new AccountAccountGroup.EmbeddedAccountAccountGroup();
+    group.setAccountId(request.getAccountId());
+    group.setAccountGroupId(request.getAccountGroupId());
+    AccountAccountGroup groupEntity = new AccountAccountGroup();
+    groupEntity.setAccountAccountGroup(group);
+    accountAccountGroupRepository.delete(groupEntity);
   }
 
   public List<AccountGroup> getAllGroups() {

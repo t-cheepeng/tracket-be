@@ -1,7 +1,10 @@
 package com.tcheepeng.tracket.stock.repository;
 
+import com.tcheepeng.tracket.account.model.AccountTransactions;
 import com.tcheepeng.tracket.account.model.StockOwned;
 import com.tcheepeng.tracket.stock.model.Trade;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -32,4 +35,6 @@ public interface TradeRepository extends JpaRepository<Trade, Integer> {
                     stock.assetClass
             """)
     List<StockOwned> findAllStockOwnedByAccount(int account);
+
+    Page<Trade> findAllByAccount(int accountId, Pageable pageable);
 }

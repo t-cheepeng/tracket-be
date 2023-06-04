@@ -9,6 +9,7 @@ import java.util.List;
 @Data
 @Builder
 public class GroupMappingResponse implements ResponseData {
+    private int id;
     private String name;
     private String currency;
     private List<Integer> accountIdUnderGroup;

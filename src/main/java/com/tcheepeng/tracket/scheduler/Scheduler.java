@@ -75,7 +75,7 @@ public class Scheduler {
           .forEach(
               rawDataPair -> {
                 List<SgxClosePrice> sgxClosingPriceList =
-                    informationProcessorService.processSgxClosingPriceData(rawDataPair);
+                    informationProcessorService.processAndSaveSgxClosingPriceData(rawDataPair);
                 stockHistoryService.storeSgxStockClosingPrice(sgxClosingPriceList);
               });
     } catch (TracketServiceException e) {

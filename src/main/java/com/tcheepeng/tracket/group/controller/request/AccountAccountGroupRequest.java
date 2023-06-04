@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class CreateAccountAccountGroupRequest {
+public class AccountAccountGroupRequest {
   @ValidID private Integer accountId;
   @ValidID private Integer accountGroupId;
 }

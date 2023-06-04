@@ -99,4 +99,8 @@ public class FetchService {
       throw new TracketServiceException(e);
     }
   }
+
+  public SgxFetchPriceHistory retrieveLatestStockClosingPrice() {
+    return sgxFetchPriceHistoryRepository.findTopByOrderByDateOfPathCodeDesc();
+  }
 }

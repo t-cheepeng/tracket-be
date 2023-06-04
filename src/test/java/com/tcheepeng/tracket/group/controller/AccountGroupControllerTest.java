@@ -9,7 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.tcheepeng.tracket.group.controller.request.CreateAccountAccountGroupRequest;
+import com.tcheepeng.tracket.group.controller.request.AccountAccountGroupRequest;
 import com.tcheepeng.tracket.group.controller.request.CreateAccountGroupRequest;
 import com.tcheepeng.tracket.group.service.AccountGroupService;
 import com.tcheepeng.tracket.group.service.dto.GroupMapping;
@@ -45,7 +45,7 @@ public class AccountGroupControllerTest {
   public static Stream<Arguments> getBadGroupAccountRequests() {
     return Stream.of(
         Arguments.of(
-            CreateAccountAccountGroupRequest.builder().accountGroupId(0).build(),
+            AccountAccountGroupRequest.builder().accountGroupId(0).build(),
             """
             {
               "status": "FAIL",
@@ -59,7 +59,7 @@ public class AccountGroupControllerTest {
             }
             """),
         Arguments.of(
-            CreateAccountAccountGroupRequest.builder().accountId(0).build(),
+            AccountAccountGroupRequest.builder().accountId(0).build(),
             """
             {
               "status": "FAIL",
@@ -73,7 +73,7 @@ public class AccountGroupControllerTest {
             }
           """),
         Arguments.of(
-            CreateAccountAccountGroupRequest.builder().accountId(0).accountGroupId(-1).build(),
+            AccountAccountGroupRequest.builder().accountId(0).accountGroupId(-1).build(),
             """
             {
               "status": "FAIL",
@@ -87,7 +87,7 @@ public class AccountGroupControllerTest {
             }
             """),
         Arguments.of(
-            CreateAccountAccountGroupRequest.builder().accountId(-2).accountGroupId(0).build(),
+            AccountAccountGroupRequest.builder().accountId(-2).accountGroupId(0).build(),
             """
             {
               "status": "FAIL",
@@ -234,8 +234,8 @@ public class AccountGroupControllerTest {
 
   @Test
   void Group_account_is_successful() throws Exception {
-    CreateAccountAccountGroupRequest request =
-        CreateAccountAccountGroupRequest.builder().accountId(0).accountGroupId(0).build();
+    AccountAccountGroupRequest request =
+        AccountAccountGroupRequest.builder().accountId(0).accountGroupId(0).build();
     ObjectMapper objectMapper = new ObjectMapper();
 
     MvcResult result =
@@ -255,7 +255,7 @@ public class AccountGroupControllerTest {
 
   @ParameterizedTest
   @MethodSource("getBadGroupAccountRequests")
-  void Group_account_bad_request(CreateAccountAccountGroupRequest request, String expectedJson)
+  void Group_account_bad_request(AccountAccountGroupRequest request, String expectedJson)
       throws Exception {
     ObjectMapper objectMapper = new ObjectMapper();
 
@@ -275,8 +275,8 @@ public class AccountGroupControllerTest {
 
   @Test
   void Group_account_data_integrity_violation_account_id() throws Exception {
-    CreateAccountAccountGroupRequest request =
-        CreateAccountAccountGroupRequest.builder().accountId(0).accountGroupId(0).build();
+    AccountAccountGroupRequest request =
+        AccountAccountGroupRequest.builder().accountId(0).accountGroupId(0).build();
     ObjectMapper objectMapper = new ObjectMapper();
 
     DataIntegrityViolationException exception =
@@ -300,8 +300,8 @@ public class AccountGroupControllerTest {
 
   @Test
   void Group_account_data_integrity_violation_account_group_id() throws Exception {
-    CreateAccountAccountGroupRequest request =
-        CreateAccountAccountGroupRequest.builder().accountId(0).accountGroupId(0).build();
+    AccountAccountGroupRequest request =
+        AccountAccountGroupRequest.builder().accountId(0).accountGroupId(0).build();
     ObjectMapper objectMapper = new ObjectMapper();
 
     DataIntegrityViolationException exception =

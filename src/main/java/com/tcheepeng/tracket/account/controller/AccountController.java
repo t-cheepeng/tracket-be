@@ -5,6 +5,7 @@ import static com.tcheepeng.tracket.common.Utils.toStandardRepresentation;
 import com.tcheepeng.tracket.account.controller.request.AccountTransactionRequest;
 import com.tcheepeng.tracket.account.controller.request.CreateAccountRequest;
 import com.tcheepeng.tracket.account.controller.request.PatchAccountRequest;
+import com.tcheepeng.tracket.account.controller.response.AccountActivityPageResponse;
 import com.tcheepeng.tracket.account.controller.response.AccountResponse;
 import com.tcheepeng.tracket.account.controller.response.AccountsResponse;
 import com.tcheepeng.tracket.account.model.AccountTransactionType;
@@ -23,6 +24,8 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +33,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/account")
+@Slf4j
 public class AccountController {
 
   private final AccountService accountService;
@@ -318,5 +322,70 @@ public class AccountController {
 
     accountService.transactAccount(request);
     return new ResponseEntity<>(Constants.EMPTY_SUCCESS_REPLY, HttpStatus.OK);
+  }
+
+  @Operation(
+      summary =
+          "Get account transactions in descending order. Each page will fetch 10 transactions")
+  @ApiResponses(
+      value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description =
+                "Get account transactions in descending order. Each page will fetch 10 transactions",
+            content = {
+              @Content(
+                  schema = @Schema(implementation = AccountActivityPageResponse.class),
+                  examples = {
+                    @ExampleObject(
+                        value =
+                            """
+                              {
+                                "status": "SUCCESS",
+                                "data": {
+                                    "hasNextPage": true,
+                                    "nextPageNum": 1,
+                                    "accountTransactionsInCurrentPage": [
+                                        {
+                                          "id": 26,
+                                          "transactionTs": "2023-05-18T12:52:17.289+00:00",
+                                          "accountIdFrom": 10,
+                                          "accountIdTo": 19,
+                                          "amount": 10000,
+                                          "transactionType": "TRANSFER",
+                                          "exchangeRate": 100000
+                                        }
+                                    ]
+                                }
+                              }
+                             """)
+                  })
+            }),
+      })
+  @GetMapping(value = "/history/{accountId}", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<ApiResponse> getAccountHistory(
+      @Parameter(description = "ID of the account to delete", example = "1") @PathVariable
+          Integer accountId,
+      @RequestParam("tradePage") int tradePageNum,
+      @RequestParam("transactionPage") int transactionPageNum) {
+    if (accountId == null) {
+      return new ResponseEntity<>(
+          ApiResponse.builder()
+              .status(ApiResponse.Status.FAIL)
+              .errors(
+                  List.of(
+                      ApiError.builder()
+                          .code("accountId")
+                          .message("Account ID cannot be null")
+                          .build()))
+              .build(),
+          HttpStatus.BAD_REQUEST);
+    }
+    log.info("{}, {}", tradePageNum, transactionPageNum);
+    AccountActivityPageResponse response =
+        accountService.getAccountHistory(accountId, transactionPageNum, tradePageNum);
+    return new ResponseEntity<>(
+        ApiResponse.builder().status(ApiResponse.Status.SUCCESS).data(response).build(),
+        HttpStatus.OK);
   }
 }

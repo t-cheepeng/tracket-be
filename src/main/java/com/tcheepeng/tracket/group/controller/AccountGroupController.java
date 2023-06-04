@@ -2,7 +2,7 @@ package com.tcheepeng.tracket.group.controller;
 
 import com.tcheepeng.tracket.common.Constants;
 import com.tcheepeng.tracket.common.response.ApiResponse;
-import com.tcheepeng.tracket.group.controller.request.CreateAccountAccountGroupRequest;
+import com.tcheepeng.tracket.group.controller.request.AccountAccountGroupRequest;
 import com.tcheepeng.tracket.group.controller.request.CreateAccountGroupRequest;
 import com.tcheepeng.tracket.group.controller.response.GroupMappingResponse;
 import com.tcheepeng.tracket.group.controller.response.GroupMappingsResponse;
@@ -18,11 +18,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/group")
@@ -89,8 +85,38 @@ public class AccountGroupController {
       produces = MediaType.APPLICATION_JSON_VALUE,
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<ApiResponse> groupAccount(
-      @Valid @RequestBody CreateAccountAccountGroupRequest request) {
+      @Valid @RequestBody AccountAccountGroupRequest request) {
     accountGroupService.groupAccount(request);
+    return new ResponseEntity<>(Constants.EMPTY_SUCCESS_REPLY, HttpStatus.OK);
+  }
+
+  @Operation(summary = "Ungroup an account from a group")
+  @ApiResponses(
+      value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "Account is ungrouped successfully",
+            content = {
+              @Content(
+                  schema = @Schema(implementation = ApiResponse.class),
+                  examples = {
+                    @ExampleObject(
+                        value =
+                            """
+                              {
+                                "status": "SUCCESS"
+                              }
+                            """)
+                  })
+            }),
+      })
+  @DeleteMapping(
+      value = "/group",
+      produces = MediaType.APPLICATION_JSON_VALUE,
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<ApiResponse> ungroupAccount(
+      @Valid @RequestBody AccountAccountGroupRequest request) {
+    accountGroupService.ungroupAccount(request);
     return new ResponseEntity<>(Constants.EMPTY_SUCCESS_REPLY, HttpStatus.OK);
   }
 
@@ -133,6 +159,7 @@ public class AccountGroupController {
             .map(
                 groupMapping ->
                     GroupMappingResponse.builder()
+                        .id(groupMapping.getId())
                         .name(groupMapping.getName())
                         .currency(groupMapping.getCurrency())
                         .accountIdUnderGroup(groupMapping.getAccountIdUnderGroup())

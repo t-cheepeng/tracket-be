@@ -8,6 +8,8 @@ import java.util.Objects;
 
 public class ExternalApi {
 
+  public static final int FUZZY_SEARCH_SCORE_THRESHOLD = 20;
+
   public static AlpacaMarketFetcher alpacaMarket() {
     return AlpacaMarketFetcher.init();
   }

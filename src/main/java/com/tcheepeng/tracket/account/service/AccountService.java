@@ -6,6 +6,7 @@ import static com.tcheepeng.tracket.common.validation.BusinessValidations.BK_ACC
 import com.tcheepeng.tracket.account.controller.request.AccountTransactionRequest;
 import com.tcheepeng.tracket.account.controller.request.CreateAccountRequest;
 import com.tcheepeng.tracket.account.controller.request.PatchAccountRequest;
+import com.tcheepeng.tracket.account.controller.response.AccountActivityPageResponse;
 import com.tcheepeng.tracket.account.controller.response.AccountResponse;
 import com.tcheepeng.tracket.account.model.Account;
 import com.tcheepeng.tracket.account.model.AccountTransactionType;
@@ -14,16 +15,23 @@ import com.tcheepeng.tracket.account.model.StockOwned;
 import com.tcheepeng.tracket.account.repository.AccountRepository;
 import com.tcheepeng.tracket.account.repository.AccountTransactionsRepository;
 import com.tcheepeng.tracket.common.service.TimeOperator;
+import com.tcheepeng.tracket.stock.controller.response.TradeResponse;
+import com.tcheepeng.tracket.stock.model.HistoricalStockPrice;
 import com.tcheepeng.tracket.stock.model.Trade;
 import com.tcheepeng.tracket.stock.model.TradeType;
+import com.tcheepeng.tracket.stock.repository.HistoricalStockPriceRepository;
 import com.tcheepeng.tracket.stock.repository.TradeRepository;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -34,15 +42,18 @@ public class AccountService {
   private final AccountTransactionsRepository transactionsRepository;
   private final TimeOperator timeOperator;
   private final TradeRepository tradeRepository;
+  private final HistoricalStockPriceRepository historicalStockPriceRepository;
 
   public AccountService(
       final AccountRepository accountRepository,
       final AccountTransactionsRepository transactionsRepository,
       final TradeRepository tradeRepository,
+      final HistoricalStockPriceRepository historicalStockPriceRepository,
       final TimeOperator timeOperator) {
     this.accountRepository = accountRepository;
     this.transactionsRepository = transactionsRepository;
     this.tradeRepository = tradeRepository;
+    this.historicalStockPriceRepository = historicalStockPriceRepository;
     this.timeOperator = timeOperator;
   }
 
@@ -112,18 +123,34 @@ public class AccountService {
                       .currency(account.getCurrency());
               List<StockOwned> stockOwnedByAccount =
                   tradeRepository.findAllStockOwnedByAccount(account.getId());
+              AtomicReference<BigDecimal> assetValue = new AtomicReference<>(BigDecimal.ZERO);
+              AtomicReference<BigDecimal> costBasis = new AtomicReference<>(BigDecimal.ZERO);
               stockOwnedByAccount.forEach(
-                  stockOwned ->
-                      log.info(
-                          "[{}, {}, {}, {}, {}, {}]",
-                          stockOwned.getStockName(),
-                          stockOwned.getCurrency(),
-                          stockOwned.getAssetClass(),
-                          stockOwned.getCostBasis(),
-                          stockOwned.getNumOfUnitsHeld(),
-                          stockOwned.getTotalFee()));
-              log.info("Found all stocks owned by account {}: {}", account, stockOwnedByAccount);
-              return accountBuilder.build();
+                  stockOwned -> {
+                    HistoricalStockPrice latestFetchedPrice =
+                        historicalStockPriceRepository.findTopByNameIsOrderByPriceTsDesc(
+                            stockOwned.getStockName());
+                    if (latestFetchedPrice == null) {
+                      log.info("No latest price fetched for: {}", stockOwned.getStockName());
+                      return;
+                    }
+
+                    BigDecimal latestPrice = latestFetchedPrice.getPrice();
+                    assetValue.set(
+                        assetValue
+                            .get()
+                            .add(
+                                latestPrice.multiply(
+                                    BigDecimal.valueOf(stockOwned.getNumOfUnitsHeld()))));
+
+                    BigDecimal stockCostBasis = BigDecimal.valueOf(stockOwned.getCostBasis());
+                    BigDecimal totalFeeIncurred = BigDecimal.valueOf(stockOwned.getTotalFee());
+                    costBasis.set(costBasis.get().add(stockCostBasis).add(totalFeeIncurred));
+                  });
+              return accountBuilder
+                  .assetValue(assetValue.get().toPlainString())
+                  .costBasis(costBasis.get().toPlainString())
+                  .build();
             })
         .toList();
   }
@@ -139,6 +166,51 @@ public class AccountService {
     } else {
       handleTransferAccount(request);
     }
+  }
+
+  public AccountActivityPageResponse getAccountHistory(
+      Integer accountId, int transactionPage, int tradePage) {
+    Page<AccountTransactions> retrievedPage = null;
+    Page<Trade> retrievedTradePage = null;
+
+    if (transactionPage >= 0) {
+      PageRequest accountTransactionPage =
+          PageRequest.of(transactionPage, 10, Sort.by("transactionTs").descending());
+      retrievedPage =
+          transactionsRepository.findAllByAccountIdFrom(accountId, accountTransactionPage);
+    }
+
+    if (tradePage >= 0) {
+      PageRequest accountTradePage = PageRequest.of(tradePage, 10, Sort.by("tradeTs").descending());
+      retrievedTradePage = tradeRepository.findAllByAccount(accountId, accountTradePage);
+    }
+
+    log.info(
+        "Fetch account history [accId={}, tranPageNum={}, tradePageNum={}], Results: [TranPage={}, TradePage={}]",
+        accountId,
+        transactionPage,
+        tradePage,
+        retrievedPage,
+        retrievedTradePage);
+
+    return AccountActivityPageResponse.builder()
+        .hasNextPageForTransaction(retrievedPage != null && retrievedPage.hasNext())
+        .hasNextPageForTrade(retrievedTradePage != null && retrievedTradePage.hasNext())
+        .nextPageNumForTransaction(
+            retrievedPage != null && retrievedPage.hasNext()
+                ? retrievedPage.nextPageable().getPageNumber()
+                : -1)
+        .nextPageNumForTrade(
+            retrievedTradePage != null && retrievedTradePage.hasNext()
+                ? retrievedTradePage.nextPageable().getPageNumber()
+                : -1)
+        .accountTransactionsInCurrentPage(
+            retrievedPage != null ? retrievedPage.getContent() : List.of())
+        .accountTradesInCurrentPage(
+            retrievedTradePage != null
+                ? mapTradeModelToResponse(retrievedTradePage.getContent())
+                : List.of())
+        .build();
   }
 
   private void handleDepositAccount(AccountTransactionRequest request) {
@@ -218,5 +290,22 @@ public class AccountService {
                             ? BigDecimal.ONE.negate()
                             : BigDecimal.ONE))
         .reduce(BigDecimal.ZERO, (BigDecimal::add));
+  }
+
+  private List<TradeResponse> mapTradeModelToResponse(List<Trade> model) {
+    return model.stream()
+        .map(
+            trade ->
+                TradeResponse.builder()
+                    .tradeTs(trade.getTradeTs())
+                    .tradeType(trade.getTradeType())
+                    .numOfUnits(trade.getNumOfUnits())
+                    .pricePerUnit(trade.getPricePerUnit().toPlainString())
+                    .name(trade.getName())
+                    .account(trade.getAccount())
+                    .fee(trade.getFee().toPlainString())
+                    .buyId(trade.getBuyId())
+                    .build())
+        .toList();
   }
 }
