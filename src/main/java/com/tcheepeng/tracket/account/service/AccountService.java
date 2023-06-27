@@ -117,6 +117,7 @@ public class AccountService {
                   AccountResponse.builder()
                       .id(account.getId())
                       .name(account.getName())
+                      .description(account.getDescription())
                       .accountType(account.getAccountType())
                       .cash(account.getCash().toPlainString())
                       .description(account.getDescription())
