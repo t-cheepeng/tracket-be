@@ -18,5 +18,5 @@ comment on column tracket.code_lookup.lookup_type is 'Domain of the lookup';
 comment on column tracket.code_lookup.lookup_value is 'Value in the domain';
 
 alter table tracket.code_lookup
-    owner to postgres;
+    owner to "tracket-be";
 

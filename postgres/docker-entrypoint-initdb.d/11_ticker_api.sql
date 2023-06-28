@@ -29,5 +29,5 @@ comment on constraint fk_name on tracket.ticker_api is 'FK from name to stock.na
 comment on constraint uk_ticker_symbol_api on tracket.ticker_api is 'Unique pair (ticker_symbol, api)';
 
 alter table tracket.ticker_api
-    owner to postgres;
+    owner to "tracket-be";
 

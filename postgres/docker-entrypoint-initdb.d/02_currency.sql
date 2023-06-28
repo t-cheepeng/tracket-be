@@ -10,5 +10,5 @@ comment on table tracket.currency is 'ISO 4217 compliant currency table';
 comment on column tracket.currency.code is 'Currency Code. E.g. SGD,USD';
 
 alter table tracket.currency
-    owner to postgres;
+    owner to "tracket-be";
 

@@ -20,5 +20,5 @@ comment on constraint uk_name on tracket.account_group is 'Name must be unique';
 comment on column tracket.account_group.currency is 'Currency of the group to display';
 
 alter table tracket.account_group
-    owner to postgres;
+    owner to "tracket-be";
 

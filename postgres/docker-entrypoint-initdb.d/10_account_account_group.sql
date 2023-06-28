@@ -13,5 +13,5 @@ create table tracket.account_account_group
 comment on table tracket.account_account_group is 'Associative table between account and account_group.\n\nAccount can belong to 0 or more Groups\nGroups can have 0 or more accounts';
 
 alter table tracket.account_account_group
-    owner to postgres;
+    owner to "tracket-be";
 

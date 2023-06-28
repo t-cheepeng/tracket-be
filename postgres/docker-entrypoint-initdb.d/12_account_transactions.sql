@@ -34,5 +34,5 @@ comment on column tracket.account_transactions.transaction_type is 'Type of tran
 comment on column tracket.account_transactions.exchange_rate is 'Exchange rate FROM to TO. In standard numeric representation';
 
 alter table tracket.account_transactions
-    owner to postgres;
+    owner to "tracket-be";
 

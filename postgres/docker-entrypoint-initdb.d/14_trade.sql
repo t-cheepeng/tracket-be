@@ -46,5 +46,5 @@ comment on column tracket.trade.buy_id is 'ID of the buy trade that is being sol
 comment on constraint fk_buy_id on tracket.trade is 'Buy ID must exist in table before stock can be sold';
 
 alter table tracket.trade
-    owner to postgres;
+    owner to "tracket-be";
 

@@ -20,5 +20,5 @@ comment on column tracket.stock.is_deleted is 'Soft delete column';
 comment on column tracket.stock.display_ticker_symbol is 'For displaying ticker symbol';
 
 alter table tracket.stock
-    owner to postgres;
+    owner to "tracket-be";
 

@@ -186,6 +186,28 @@
 					</excludes>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>com.google.cloud.tools</groupId>
+				<artifactId>jib-maven-plugin</artifactId>
+				<version>3.3.2</version>
+				<configuration>
+					<from>
+						<image>eclipse-temurin:19-jre</image>
+					</from>
+					<to>tracket-be</to>
+					<container>
+						<environment>
+							<spring.datasource.username>tracket-be</spring.datasource.username>
+							<spring.datasource.password>${db-password}</spring.datasource.password>
+							<spring.datasource.url>jdbc:postgresql://host.docker.internal:8081/tracket</spring.datasource.url>
+							<spring.datasource.driver-class-name>org.postgresql.Driver</spring.datasource.driver-class-name>
+						</environment>
+						<ports>
+							<port>8080</port>
+						</ports>
+					</container>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 	<repositories>
@@ -228,5 +250,11 @@
 			</releases>
 		</pluginRepository>
 	</pluginRepositories>
+
+	<profiles>
+		<profile>
+			<id>dev</id>
+		</profile>
+	</profiles>
 
 </project>

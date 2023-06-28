@@ -35,5 +35,5 @@ comment on column tracket.account.cash is 'Cash held in account. Standard Decima
 comment on column tracket.account.is_deleted is 'Flag for account soft deletion';
 
 alter table tracket.account
-    owner to postgres;
+    owner to "tracket-be";
 

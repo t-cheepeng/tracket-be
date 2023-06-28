@@ -20,5 +20,5 @@ comment on column tracket.sgx_fetch_price_history.fetch_ts is 'Timestamp of the 
 comment on column tracket.sgx_fetch_price_history.file_blob is 'Stores file retrieved';
 
 alter table tracket.sgx_fetch_price_history
-    owner to postgres;
+    owner to "tracket-be";
 

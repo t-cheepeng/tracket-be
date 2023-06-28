@@ -32,4 +32,7 @@ build/
 ### VS Code ###
 .vscode/
 
+### Secret type files ###
 .env
+db_password.txt
+settings.xml

@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: tracket-postgres:latest
+    container_name: tracket-postgres
+    ports:
+      - "8081:5432"
+    secrets:
+      - pg_pwd_file
+    environment:
+      POSTGRES_USER: tracket-be
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_pwd_file
+      POSTGRES_DB: tracket
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+
+secrets:
+  pg_pwd_file:
+    file: db_password.txt
+
+volumes:
+  db_data:

@@ -26,5 +26,5 @@ comment on column tracket.historical_stock_price.api is 'API used to retrieve th
 comment on constraint fk_api on tracket.historical_stock_price is 'api -> lookup value api';
 
 alter table tracket.historical_stock_price
-    owner to postgres;
+    owner to "tracket-be";
 

@@ -1,0 +1,10 @@
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
+    <profiles>
+        <profile>
+            <id>dev</id>
+            <properties>
+                <db-password>password</db-password>
+            </properties>
+        </profile>
+    </profiles>
+</settings>
