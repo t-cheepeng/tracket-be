@@ -36,3 +36,4 @@ build/
 .env
 db_password.txt
 settings.xml
+alpaca.properties
